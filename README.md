@@ -7,8 +7,12 @@ Hadar is a smart home monitoring project for ingesting Zigbee/MQTT sensor events
 - `ingestion-pipeline/`: MQTT consumer and processor for energy and temperature events.
 - `isolation-forest/`: scheduled anomaly detection pipeline.
 - `db/`: shared SQLAlchemy database models and session setup.
-- `docs/`: database schema notes.
+- `docs/`: architecture diagram and database schema notes.
 - `k3s/`: sanitized Kubernetes manifests for the `hadar` k3s deployment.
+
+## Architecture
+
+![Hadar architecture diagram](images/architecture-diagram.png)
 
 ## Local Setup
 
@@ -69,4 +73,3 @@ Run tests where present:
 ```bash
 pytest
 ```
-

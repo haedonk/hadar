@@ -1,0 +1,483 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hadar Project Architecture</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f8fb;
+      --panel: #ffffff;
+      --ink: #172033;
+      --muted: #5d6b82;
+      --line: #c8d2e3;
+      --line-strong: #8091ad;
+      --sensor: #2f80ed;
+      --ingest: #0f8b6f;
+      --data: #6f52c5;
+      --analysis: #c24d2c;
+      --ops: #526070;
+      --shadow: 0 12px 34px rgba(21, 32, 51, 0.10);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.86), rgba(246, 248, 251, 0.96)),
+        repeating-linear-gradient(90deg, rgba(128, 145, 173, 0.11) 0 1px, transparent 1px 72px),
+        repeating-linear-gradient(0deg, rgba(128, 145, 173, 0.09) 0 1px, transparent 1px 72px);
+    }
+
+    .page {
+      width: min(1240px, calc(100vw - 32px));
+      margin: 0 auto;
+      padding: 32px 0 48px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: end;
+      padding: 0 0 22px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 4.2rem);
+      line-height: 0.95;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      max-width: 760px;
+      margin: 14px 0 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.55;
+    }
+
+    .meta {
+      min-width: 240px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      box-shadow: var(--shadow);
+    }
+
+    .meta div {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 6px 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+      border-bottom: 1px solid rgba(200, 210, 227, 0.7);
+    }
+
+    .meta div:last-child {
+      border-bottom: 0;
+    }
+
+    .meta strong {
+      color: var(--ink);
+      font-weight: 700;
+      text-align: right;
+    }
+
+    .diagram-panel {
+      margin-top: 26px;
+      padding: 24px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+
+    svg {
+      display: block;
+      min-width: 1120px;
+      width: 100%;
+      height: auto;
+    }
+
+    .lane-title {
+      font-size: 15px;
+      font-weight: 800;
+      fill: #26364f;
+    }
+
+    .lane-subtitle {
+      font-size: 12px;
+      fill: var(--muted);
+    }
+
+    .node-title {
+      font-size: 14px;
+      font-weight: 800;
+      fill: #152033;
+    }
+
+    .node-text {
+      font-size: 12px;
+      fill: #526070;
+    }
+
+    .node {
+      fill: #fff;
+      stroke: var(--line-strong);
+      stroke-width: 1.4;
+    }
+
+    .sensor-node {
+      stroke: var(--sensor);
+    }
+
+    .ingest-node {
+      stroke: var(--ingest);
+    }
+
+    .data-node {
+      stroke: var(--data);
+    }
+
+    .analysis-node {
+      stroke: var(--analysis);
+    }
+
+    .ops-node {
+      stroke: var(--ops);
+    }
+
+    .lane {
+      fill: #f8fafc;
+      stroke: #dbe3f0;
+      stroke-width: 1;
+    }
+
+    .flow {
+      fill: none;
+      stroke: #5d6b82;
+      stroke-width: 2.2;
+      marker-end: url(#arrow);
+    }
+
+    .flow-secondary {
+      fill: none;
+      stroke: #95a3b8;
+      stroke-width: 1.8;
+      stroke-dasharray: 7 6;
+      marker-end: url(#arrow-muted);
+    }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 800;
+      fill: #fff;
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(140px, 1fr));
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-height: 42px;
+      padding: 10px 12px;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .swatch {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+    }
+
+    .details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .detail {
+      padding: 18px;
+      border: 1px solid var(--line);
+      background: #fff;
+      min-height: 180px;
+    }
+
+    .detail h2 {
+      margin: 0 0 12px;
+      font-size: 1.05rem;
+      letter-spacing: 0;
+    }
+
+    .detail ul {
+      margin: 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.55;
+      font-size: 0.94rem;
+    }
+
+    .detail li + li {
+      margin-top: 7px;
+    }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+      font-size: 0.88em;
+      color: #26364f;
+      background: #eef3f9;
+      padding: 2px 5px;
+    }
+
+    @media (max-width: 900px) {
+      header,
+      .details {
+        grid-template-columns: 1fr;
+      }
+
+      .meta {
+        min-width: 0;
+      }
+
+      .legend {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        width: min(100vw - 20px, 1240px);
+        padding-top: 18px;
+      }
+
+      .diagram-panel {
+        padding: 12px;
+      }
+
+      .legend {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <section>
+        <h1>Hadar Architecture</h1>
+        <p class="subtitle">
+          Hadar collects smart home Zigbee sensor data through MQTT, stores structured readings in PostgreSQL,
+          and runs a scheduled anomaly detection workflow in k3s.
+        </p>
+      </section>
+      <aside class="meta" aria-label="Project metadata">
+        <div><span>Project</span><strong>Hadar</strong></div>
+        <div><span>Course</span><strong>CS406</strong></div>
+        <div><span>Repo</span><strong>haedonk/hadar</strong></div>
+        <div><span>Runtime</span><strong>k3s</strong></div>
+      </aside>
+    </header>
+
+    <section class="diagram-panel" aria-label="Architecture diagram">
+      <svg viewBox="0 0 1180 720" role="img" aria-labelledby="diagram-title diagram-desc">
+        <title id="diagram-title">Hadar system architecture diagram</title>
+        <desc id="diagram-desc">
+          Diagram showing Zigbee devices publishing to MQTT, ingestion pipeline writing to PostgreSQL,
+          isolation forest reading data on a schedule, and k3s managing workloads and storage.
+        </desc>
+
+        <defs>
+          <marker id="arrow" markerWidth="12" markerHeight="12" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#5d6b82"></path>
+          </marker>
+          <marker id="arrow-muted" markerWidth="12" markerHeight="12" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+            <path d="M0,0 L0,6 L9,3 z" fill="#95a3b8"></path>
+          </marker>
+          <filter id="soft-shadow" x="-10%" y="-10%" width="120%" height="130%">
+            <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#152033" flood-opacity="0.11"></feDropShadow>
+          </filter>
+        </defs>
+
+        <rect x="20" y="42" width="214" height="580" rx="8" class="lane"></rect>
+        <rect x="254" y="42" width="214" height="580" rx="8" class="lane"></rect>
+        <rect x="488" y="42" width="214" height="580" rx="8" class="lane"></rect>
+        <rect x="722" y="42" width="214" height="580" rx="8" class="lane"></rect>
+        <rect x="956" y="42" width="204" height="580" rx="8" class="lane"></rect>
+
+        <text x="38" y="74" class="lane-title">Smart Home</text>
+        <text x="38" y="94" class="lane-subtitle">Zigbee sensors and plugs</text>
+        <text x="272" y="74" class="lane-title">Messaging</text>
+        <text x="272" y="94" class="lane-subtitle">Zigbee2MQTT topics</text>
+        <text x="506" y="74" class="lane-title">Processing</text>
+        <text x="506" y="94" class="lane-subtitle">Python services</text>
+        <text x="740" y="74" class="lane-title">Persistence</text>
+        <text x="740" y="94" class="lane-subtitle">PostgreSQL and PVC</text>
+        <text x="974" y="74" class="lane-title">Operations</text>
+        <text x="974" y="94" class="lane-subtitle">GitHub, k3s, Trello</text>
+
+        <rect x="54" y="138" width="146" height="86" rx="8" class="node sensor-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="78" cy="163" r="12" fill="#2f80ed"></circle>
+        <text x="74" y="167" class="badge">Z</text>
+        <text x="94" y="162" class="node-title">Zigbee Devices</text>
+        <text x="72" y="188" class="node-text">Smart plugs</text>
+        <text x="72" y="206" class="node-text">Temperature sensors</text>
+
+        <rect x="54" y="282" width="146" height="86" rx="8" class="node sensor-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="78" cy="307" r="12" fill="#2f80ed"></circle>
+        <text x="74" y="311" class="badge">E</text>
+        <text x="94" y="306" class="node-title">Measurements</text>
+        <text x="72" y="332" class="node-text">Power, energy</text>
+        <text x="72" y="350" class="node-text">Temperature, linkquality</text>
+
+        <rect x="288" y="202" width="146" height="96" rx="8" class="node ingest-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="312" cy="228" r="12" fill="#0f8b6f"></circle>
+        <text x="308" y="232" class="badge">M</text>
+        <text x="328" y="227" class="node-title">MQTT Broker</text>
+        <text x="306" y="254" class="node-text">Base topic:</text>
+        <text x="306" y="272" class="node-text">zigbee2mqtt</text>
+
+        <rect x="522" y="138" width="146" height="104" rx="8" class="node ingest-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="546" cy="164" r="12" fill="#0f8b6f"></circle>
+        <text x="542" y="168" class="badge">I</text>
+        <text x="562" y="163" class="node-title">Ingestion</text>
+        <text x="540" y="190" class="node-text">MQTT consumer</text>
+        <text x="540" y="208" class="node-text">Topic mapper</text>
+        <text x="540" y="226" class="node-text">Event queue</text>
+
+        <rect x="522" y="300" width="146" height="116" rx="8" class="node ingest-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="546" cy="326" r="12" fill="#0f8b6f"></circle>
+        <text x="542" y="330" class="badge">S</text>
+        <text x="562" y="325" class="node-title">Services</text>
+        <text x="540" y="352" class="node-text">Device service</text>
+        <text x="540" y="370" class="node-text">Energy service</text>
+        <text x="540" y="388" class="node-text">Temperature service</text>
+
+        <rect x="756" y="148" width="146" height="132" rx="8" class="node data-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="780" cy="174" r="12" fill="#6f52c5"></circle>
+        <text x="776" y="178" class="badge">DB</text>
+        <text x="800" y="173" class="node-title">PostgreSQL</text>
+        <text x="774" y="200" class="node-text">devices</text>
+        <text x="774" y="218" class="node-text">energy_readings</text>
+        <text x="774" y="236" class="node-text">temperature_readings</text>
+        <text x="774" y="254" class="node-text">load groups</text>
+
+        <rect x="756" y="346" width="146" height="88" rx="8" class="node data-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="780" cy="372" r="12" fill="#6f52c5"></circle>
+        <text x="776" y="376" class="badge">PV</text>
+        <text x="800" y="371" class="node-title">Persistent Data</text>
+        <text x="774" y="398" class="node-text">hadar-data-pvc</text>
+        <text x="774" y="416" class="node-text">/mnt/hadar-data</text>
+
+        <rect x="522" y="488" width="146" height="94" rx="8" class="node analysis-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="546" cy="514" r="12" fill="#c24d2c"></circle>
+        <text x="542" y="518" class="badge">A</text>
+        <text x="562" y="513" class="node-title">Isolation Forest</text>
+        <text x="540" y="540" class="node-text">Scheduled CronJob</text>
+        <text x="540" y="558" class="node-text">Anomaly detection</text>
+
+        <rect x="990" y="134" width="136" height="92" rx="8" class="node ops-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="1014" cy="160" r="12" fill="#526070"></circle>
+        <text x="1010" y="164" class="badge">K</text>
+        <text x="1030" y="159" class="node-title">k3s</text>
+        <text x="1008" y="186" class="node-text">Namespace: hadar</text>
+        <text x="1008" y="204" class="node-text">Deployments + jobs</text>
+
+        <rect x="990" y="284" width="136" height="96" rx="8" class="node ops-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="1014" cy="310" r="12" fill="#526070"></circle>
+        <text x="1010" y="314" class="badge">G</text>
+        <text x="1030" y="309" class="node-title">GitHub Repo</text>
+        <text x="1008" y="336" class="node-text">Source code</text>
+        <text x="1008" y="354" class="node-text">k3s manifests</text>
+
+        <rect x="990" y="448" width="136" height="92" rx="8" class="node ops-node" filter="url(#soft-shadow)"></rect>
+        <circle cx="1014" cy="474" r="12" fill="#526070"></circle>
+        <text x="1010" y="478" class="badge">T</text>
+        <text x="1030" y="473" class="node-title">Trello</text>
+        <text x="1008" y="500" class="node-text">Sprint planning</text>
+        <text x="1008" y="518" class="node-text">Progress tracking</text>
+
+        <path d="M200 181 C235 181 246 250 288 250" class="flow"></path>
+        <path d="M200 325 C236 325 247 250 288 250" class="flow"></path>
+        <path d="M434 250 C470 250 486 190 522 190" class="flow"></path>
+        <path d="M595 242 L595 300" class="flow"></path>
+        <path d="M668 358 C706 358 718 214 756 214" class="flow"></path>
+        <path d="M829 280 L829 346" class="flow-secondary"></path>
+        <path d="M756 214 C704 214 708 535 668 535" class="flow-secondary"></path>
+        <path d="M668 535 C720 535 714 390 756 390" class="flow-secondary"></path>
+        <path d="M902 214 C936 214 946 180 990 180" class="flow-secondary"></path>
+        <path d="M902 390 C936 390 946 180 990 180" class="flow-secondary"></path>
+        <path d="M990 330 C944 330 722 535 668 535" class="flow-secondary"></path>
+
+        <rect x="230" y="130" width="112" height="24" rx="12" fill="#ffffff" stroke="#dbe3f0"></rect>
+        <text x="248" y="147" class="node-text">MQTT events</text>
+        <rect x="452" y="174" width="82" height="24" rx="12" fill="#ffffff" stroke="#dbe3f0"></rect>
+        <text x="472" y="191" class="node-text">subscribe</text>
+        <rect x="682" y="130" width="112" height="24" rx="12" fill="#ffffff" stroke="#dbe3f0"></rect>
+        <text x="701" y="147" class="node-text">DB writes</text>
+        <rect x="682" y="556" width="108" height="24" rx="12" fill="#ffffff" stroke="#dbe3f0"></rect>
+        <text x="704" y="573" class="node-text">DB reads</text>
+        <rect x="910" y="118" width="72" height="24" rx="12" fill="#ffffff" stroke="#dbe3f0"></rect>
+        <text x="928" y="135" class="node-text">runs</text>
+      </svg>
+
+      <div class="legend" aria-label="Diagram legend">
+        <div class="legend-item"><span class="swatch" style="background:#2f80ed"></span>Smart home inputs</div>
+        <div class="legend-item"><span class="swatch" style="background:#0f8b6f"></span>Ingestion services</div>
+        <div class="legend-item"><span class="swatch" style="background:#6f52c5"></span>Data persistence</div>
+        <div class="legend-item"><span class="swatch" style="background:#c24d2c"></span>Anomaly detection</div>
+        <div class="legend-item"><span class="swatch" style="background:#526070"></span>Operations workflow</div>
+      </div>
+    </section>
+
+    <section class="details" aria-label="Architecture details">
+      <article class="detail">
+        <h2>Data Flow</h2>
+        <ul>
+          <li>Zigbee devices publish energy and temperature data through Zigbee2MQTT.</li>
+          <li>The ingestion worker subscribes to MQTT topics and maps payloads into structured events.</li>
+          <li>Repository and service layers write normalized readings and metadata into PostgreSQL.</li>
+        </ul>
+      </article>
+
+      <article class="detail">
+        <h2>Deployment</h2>
+        <ul>
+          <li>k3s runs the project in the <code>hadar</code> namespace.</li>
+          <li>The ingestion pipeline runs as a Deployment.</li>
+          <li>The isolation forest pipeline runs as a scheduled CronJob.</li>
+          <li>Secrets are created outside Git and referenced by workload manifests.</li>
+        </ul>
+      </article>
+
+      <article class="detail">
+        <h2>Storage and Analysis</h2>
+        <ul>
+          <li>PostgreSQL stores device, reading, load group, and error log tables.</li>
+          <li>A retained hostPath PV backs shared runtime storage through <code>hadar-data-pvc</code>.</li>
+          <li>The anomaly detection job reads historical data and produces model/output artifacts locally.</li>
+        </ul>
+      </article>
+    </section>
+  </main>
+</body>
+</html>
