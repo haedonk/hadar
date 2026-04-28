@@ -1,0 +1,48 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: isolation-forest
+  namespace: hadar
+spec:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
+  successfulJobsHistoryLimit: 3
+  suspend: false
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: isolation-forest
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: isolation-forest
+              image: haka9670/isolation-forest:latest
+              imagePullPolicy: Always
+              envFrom:
+                - secretRef:
+                    name: isolation-forest-creds
+                - configMapRef:
+                    name: isolation-forest-config
+              env:
+                - name: HADAR_DATA_DIR
+                  value: /mnt/hadar-data
+              volumeMounts:
+                - name: hadar-data
+                  mountPath: /mnt/hadar-data
+                  subPath: isolation-forest
+              resources:
+                limits:
+                  cpu: "1"
+                  memory: 1Gi
+                requests:
+                  cpu: 250m
+                  memory: 512Mi
+          volumes:
+            - name: hadar-data
+              persistentVolumeClaim:
+                claimName: hadar-data-pvc
+

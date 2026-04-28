@@ -1,0 +1,29 @@
+[project]
+name = "hadar"
+version = "0.1.0"
+description = "Smart Home Anomaly Detector — temperature & energy monitoring with ML"
+authors = [{name = "Haedon Kaufman", email = "haka9670@gmail.com"}]
+requires-python = ">=3.11"
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+src = ["ingestion-pipeline", "isolation-forest", "db"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["db", "config", "pipeline", "ingest", "repos", "schemas", "services", "utils"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true

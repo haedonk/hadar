@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ingestion-pipeline
+  namespace: hadar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ingestion-pipeline
+  template:
+    metadata:
+      labels:
+        app: ingestion-pipeline
+    spec:
+      containers:
+        - name: processor
+          image: haka9670/ingestion-pipeline:latest
+          imagePullPolicy: Always
+          envFrom:
+            - secretRef:
+                name: ingestion-pipeline-creds
+            - configMapRef:
+                name: ingestion-pipeline-config
+          env:
+            - name: HADAR_DATA_DIR
+              value: /mnt/hadar-data
+          volumeMounts:
+            - name: hadar-data
+              mountPath: /mnt/hadar-data
+              subPath: ingestion-pipeline
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 250m
+              memory: 256Mi
+      volumes:
+        - name: hadar-data
+          persistentVolumeClaim:
+            claimName: hadar-data-pvc
+

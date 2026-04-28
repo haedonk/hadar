@@ -1,0 +1,6 @@
+﻿# Core dependencies
+asyncpg==0.31.0
+paho-mqtt==2.1.0
+pydantic==2.12.5
+python-dotenv==1.2.2
+SQLAlchemy==2.0.45

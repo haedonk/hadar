@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: hadar-truenas-pv
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: hadar-truenas
+  hostPath:
+    path: /mnt/truenas-hadar
+    type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hadar-data-pvc
+  namespace: hadar
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hadar-truenas
+  volumeName: hadar-truenas-pv
+  resources:
+    requests:
+      storage: 20Gi
+

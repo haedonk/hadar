@@ -1,0 +1,31 @@
+# Environment
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.ruff_cache/
+
+# IDE
+.idea/
+.vscode/
+.windsurf/
+
+# Local tooling
+.codex
+.mcp/
+
+# ML artifacts
+models/*.joblib
+
+# Runtime output
+output/
+logs/
+/data/
+
+# OS
+.DS_Store

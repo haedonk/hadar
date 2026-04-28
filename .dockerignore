@@ -1,0 +1,16 @@
+.git
+.ruff_cache
+.windsurf
+.mcp
+data/
+docs/
+__pycache__
+*.pyc
+.env
+.env.*
+!.env.example
+models/*.joblib
+output/
+logs/
+.vscode/
+.idea/

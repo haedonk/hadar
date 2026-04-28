@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: isolation-forest-config
+  namespace: hadar
+data:
+  CLEAN_DATA: "true"
+  DB_DRIVER: postgresql+asyncpg
+  DB_HOST: postgres.db.svc.cluster.local
+  DB_NAME: zigbee_db
+  DB_PORT: "5432"
+  DEBUG: "false"
+  LOG_LEVEL: INFO
+  SAVE_CSV: "false"
+

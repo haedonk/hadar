@@ -1,0 +1,11 @@
+[project]
+name = "ingestion-pipeline"
+version = "0.1.0"
+description = "MQTT sensor ingestion pipeline for Hadar smart home monitoring"
+authors = ["Haedon Kaufman <haka9670@gmail.com>"]
+license = "MIT"
+requires-python = ">=3.8"
+
+[tool.setuptools]
+packages = ["ingest", "repos", "schemas", "services", "utils"]
+
