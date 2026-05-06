@@ -1,0 +1,16 @@
+name,contamination,random_state,test_size,min_training_rows,n_estimators,feature_columns
+full_c001_e100,0.01,42,0.2,10,100,
+full_c002_e100,0.02,42,0.2,10,100,
+full_c003_e100,0.03,42,0.2,10,100,
+full_c005_e100,0.05,42,0.2,10,100,
+full_c008_e100,0.08,42,0.2,10,100,
+full_c003_e200,0.03,42,0.2,10,200,
+full_c003_e300,0.03,42,0.2,10,300,
+temperature_only_c003_e100,0.03,42,0.2,10,100,temperature
+temp_zscore_c003_e100,0.03,42,0.2,10,100,temperature|temperature_zscore
+trend_only_c003_e100,0.03,42,0.2,10,100,temperature|temperature_rate_per_hour|temperature_zscore
+rolling_only_c003_e100,0.03,42,0.2,10,100,temperature|temperature_rolling_1h|temperature_rolling_6h|temperature_zscore
+calendar_only_c003_e100,0.03,42,0.2,10,100,temperature|hour_sin|hour_cos|day_of_week_sin|day_of_week_cos|temperature_zscore
+no_calendar_c003_e100,0.03,42,0.2,10,100,temperature|temperature_rolling_1h|temperature_rolling_6h|temperature_rate_per_hour|temperature_zscore
+no_rolling_c003_e100,0.03,42,0.2,10,100,temperature|temperature_rate_per_hour|hour_sin|hour_cos|day_of_week_sin|day_of_week_cos|temperature_zscore
+no_zscore_c003_e100,0.03,42,0.2,10,100,temperature|temperature_rolling_1h|temperature_rolling_6h|temperature_rate_per_hour|hour_sin|hour_cos|day_of_week_sin|day_of_week_cos

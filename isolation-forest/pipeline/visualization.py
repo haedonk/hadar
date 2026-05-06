@@ -25,7 +25,7 @@ def plot_anomaly_bar_chart(df: pd.DataFrame, output_dir: Path) -> None:
         sns.histplot(anomalies, color="crimson", label="Anomaly", bins=30, ax=ax, kde=True)
 
         ax.set_title(f"{device} — Temperature Distribution")
-        ax.set_xlabel("Temperature (\u00b0C)")
+        ax.set_xlabel("Temperature (\u00b0F)")
         ax.set_ylabel("Count")
         ax.legend()
 
@@ -70,7 +70,7 @@ def plot_anomaly_scatter(df: pd.DataFrame, output_dir: Path) -> None:
 
         ax.set_title(f"{device} — Temperature by Hour of Day")
         ax.set_xlabel("Hour of Day")
-        ax.set_ylabel("Temperature (\u00b0C)")
+        ax.set_ylabel("Temperature (\u00b0F)")
         ax.set_xticks(range(24))
         ax.legend()
         ax.grid(alpha=0.3)

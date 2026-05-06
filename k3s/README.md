@@ -10,7 +10,8 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `ingestion-pipeline/deployment.yaml`: MQTT-to-PostgreSQL ingestion worker.
 - `ingestion-pipeline/secret.example.yaml`: placeholder secret shape only.
 - `isolation-forest/configmap.yaml`: non-secret isolation forest settings.
-- `isolation-forest/cronjob.yaml`: scheduled anomaly detection job.
+- `isolation-forest/deployment.yaml`: long-running APScheduler service for training sweeps.
+- `isolation-forest/cronjob.yaml`: legacy scheduled anomaly detection job, currently suspended.
 - `isolation-forest/secret.example.yaml`: placeholder secret shape only.
 
 ## Required External Services
@@ -50,13 +51,14 @@ kubectl apply -f k3s/ingestion-pipeline/configmap.yaml
 kubectl apply -f k3s/isolation-forest/configmap.yaml
 kubectl apply -f k3s/ingestion-pipeline/deployment.yaml
 kubectl apply -f k3s/isolation-forest/cronjob.yaml
+kubectl apply -f k3s/isolation-forest/deployment.yaml
 ```
 
 ## Verify
 
 ```bash
 kubectl -n hadar rollout status deployment/ingestion-pipeline
+kubectl -n hadar rollout status deployment/isolation-forest
 kubectl -n hadar get cronjob isolation-forest
 kubectl -n hadar get pods
 ```
-

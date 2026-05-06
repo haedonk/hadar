@@ -26,6 +26,7 @@ models/*.joblib
 output/
 logs/
 /data/
+/isolation-forest/data/
 
 # OS
 .DS_Store

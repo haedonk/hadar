@@ -1,6 +1,6 @@
-# Isolation Forest — Energy Anomaly Detection
+# Isolation Forest — Temperature Anomaly Detection
 
-Per-device anomaly detection on energy readings using scikit-learn's Isolation Forest.
+Per-device anomaly detection on temperature readings using scikit-learn's Isolation Forest. Raw database temperatures are converted from Celsius to Fahrenheit during cleaning, before modeling and visualization.
 
 ## Setup
 
@@ -28,10 +28,10 @@ python main.py
 ```
 
 This will:
-1. Fetch energy readings from the database
+1. Fetch temperature readings from the database
 2. Run a separate Isolation Forest per device
 3. Print anomaly summary to the console
-4. Save visualizations to `output/` and display them interactively
+4. Save Fahrenheit-based visualizations to `output/` and display them interactively
 
 ## Project Structure
 

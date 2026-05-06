@@ -1,35 +1,13 @@
 import asyncio
-from datetime import date
-
-import pandas as pd
-from sqlalchemy import select
 
 from config import config
-from db import Device, TemperatureReading, get_db
 from pipeline.cleaning import clean_data
+from pipeline.data_access import fetch_temperature_readings_df
 from pipeline.detection import run_per_device_isolation
 from pipeline.visualization import plot_anomaly_bar_chart, plot_anomaly_scatter
 from utils.logger import get_logger, setup_logging
 
 logger = get_logger(__name__)
-
-
-async def fetch_temperature_readings(start_date: date, end_date: date) -> list[dict]:
-    """Fetch temperature readings joined with device labels for the given date range."""
-    async with get_db() as session:
-        stmt = (
-            select(
-                TemperatureReading.id,
-                Device.device_label,
-                TemperatureReading.temperature,
-                TemperatureReading.ts.label("datetime"),
-            )
-            .join(Device, Device.id == TemperatureReading.device_id)
-            .where(TemperatureReading.ts >= start_date)
-            .where(TemperatureReading.ts <= end_date)
-        )
-        result = await session.execute(stmt)
-        return [row._asdict() for row in result]
 
 
 async def main() -> None:
@@ -38,12 +16,7 @@ async def main() -> None:
     logs_dir, output_dir = setup_logging()
     logger.info("Starting temperature anomaly detection pipeline")
 
-    rows = await fetch_temperature_readings(
-        start_date=date(2026, 1, 11),
-        end_date=date(2026, 1, 15),
-    )
-
-    df = pd.DataFrame(rows)
+    df = await fetch_temperature_readings_df()
     logger.info(f"Fetched {len(df)} rows")
     logger.debug(f"DataFrame head:\n{df.head()}")
 

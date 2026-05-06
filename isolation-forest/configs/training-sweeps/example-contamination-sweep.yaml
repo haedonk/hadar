@@ -1,0 +1,17 @@
+name: contamination-sweep
+defaults:
+  random_state: 42
+  test_size: 0.2
+  min_training_rows: 10
+  n_estimators: 100
+configs:
+  - name: contamination_0_01
+    contamination: 0.01
+  - name: contamination_0_02
+    contamination: 0.02
+  - name: contamination_0_03
+    contamination: 0.03
+  - name: contamination_0_05
+    contamination: 0.05
+  - name: contamination_0_08
+    contamination: 0.08

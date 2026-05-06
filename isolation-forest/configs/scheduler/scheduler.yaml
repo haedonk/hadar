@@ -1,0 +1,9 @@
+timezone: America/New_York
+jobs:
+  - name: twice_daily_training_sweep
+    type: training_sweep
+    enabled: true
+    trigger: cron
+    hour: "6,18"
+    minute: 0
+    config_path: ../training-sweeps/comprehensive-training-sweep.csv

@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: isolation-forest
+  namespace: hadar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: isolation-forest
+  template:
+    metadata:
+      labels:
+        app: isolation-forest
+    spec:
+      containers:
+        - name: isolation-forest
+          image: haka9670/isolation-forest:latest
+          imagePullPolicy: Always
+          command:
+            - python
+            - scheduler/service.py
+            - --config
+            - configs/scheduler/scheduler.yaml
+          envFrom:
+            - secretRef:
+                name: isolation-forest-creds
+            - configMapRef:
+                name: isolation-forest-config
+          env:
+            - name: HADAR_DATA_DIR
+              value: /mnt/hadar-data
+            - name: MPLCONFIGDIR
+              value: /tmp/matplotlib
+          volumeMounts:
+            - name: hadar-data
+              mountPath: /mnt/hadar-data
+              subPath: isolation-forest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+      volumes:
+        - name: hadar-data
+          persistentVolumeClaim:
+            claimName: hadar-data-pvc

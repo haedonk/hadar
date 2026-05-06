@@ -16,19 +16,21 @@ Hadar is a smart home monitoring project for ingesting Zigbee/MQTT sensor events
 
 ## Local Setup
 
-Create a Python environment and install development dependencies:
+Create one Python environment at the repository root and install the shared local dependencies:
 
 ```bash
 python -m venv .venv
 source .venv/bin/activate
+pip install --upgrade pip
 pip install -r requirements-dev.txt
+pip install -r requirements.txt
 ```
 
-Each service has its own runtime dependencies:
+Service-specific runtime dependency files are still kept for Docker builds and deployable service boundaries:
 
-```bash
-pip install -r ingestion-pipeline/requirements.txt
-pip install -r isolation-forest/requirements.txt
+```text
+ingestion-pipeline/requirements.txt
+isolation-forest/requirements.txt
 ```
 
 Copy the example environment files and fill in local values:

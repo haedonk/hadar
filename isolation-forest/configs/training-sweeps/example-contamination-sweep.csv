@@ -1,0 +1,6 @@
+name,contamination,random_state,test_size,min_training_rows,n_estimators,feature_columns
+contamination_0_01,0.01,42,0.2,10,100,
+contamination_0_02,0.02,42,0.2,10,100,
+contamination_0_03,0.03,42,0.2,10,100,
+contamination_0_05,0.05,42,0.2,10,100,
+contamination_0_08,0.08,42,0.2,10,100,

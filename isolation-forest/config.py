@@ -32,6 +32,7 @@ class Config:
     SAVE_CSV: bool = os.getenv("SAVE_CSV", "False").lower() in ("true", "1", "yes")
 
     CLEAN_DATA: bool = os.getenv("CLEAN_DATA", "True").lower() in ("true", "1", "yes")
+    ISOLATION_FOREST_CONTAMINATION: float = float(os.getenv("ISOLATION_FOREST_CONTAMINATION", "0.05"))
 
 
 config = Config()

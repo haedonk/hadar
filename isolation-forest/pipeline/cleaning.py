@@ -22,13 +22,17 @@ def clean_data(df: pd.DataFrame, output_dir: Path | None = None) -> pd.DataFrame
     logger.debug(f"After removing null temperatures: {len(df)} rows")
     stats.append({"step": "remove_null_temperature", "rows": len(df)})
 
+    df = _convert_temperature_to_fahrenheit(df)
+    logger.debug("Converted temperatures to Fahrenheit")
+    stats.append({"step": "convert_temperature_to_fahrenheit", "rows": len(df)})
+
     df = _cap_extreme_values(df)
     logger.debug(f"After capping extreme values: {len(df)} rows")
     stats.append({"step": "cap_extreme_values", "rows": len(df)})
 
-    df = _deduplicate_timestamps(df, output_dir)
-    logger.debug(f"After deduplicating timestamps: {len(df)} rows")
-    stats.append({"step": "deduplicate_timestamps", "rows": len(df)})
+    df = _spread_duplicate_timestamps(df)
+    logger.debug("Spread repeated device timestamps across the next timestamp interval")
+    stats.append({"step": "spread_duplicate_timestamps", "rows": len(df)})
 
     df = _mark_data_gaps(df)
     logger.debug(f"After marking data gaps: {len(df)} rows")
@@ -50,8 +54,15 @@ def _remove_null_temperature(df: pd.DataFrame) -> pd.DataFrame:
     return df.dropna(subset=["temperature"]).copy()
 
 
+def _convert_temperature_to_fahrenheit(df: pd.DataFrame) -> pd.DataFrame:
+    """Convert raw Celsius temperature readings to Fahrenheit."""
+    df = df.copy()
+    df["temperature"] = df["temperature"].astype(float) * 9 / 5 + 32
+    return df
+
+
 def _cap_extreme_values(df: pd.DataFrame) -> pd.DataFrame:
-    """Per-device: cap extreme temperature values at mean ± 4*std."""
+    """Per-device: cap extreme Fahrenheit temperature values at mean ± 4*std."""
     df = df.copy()
     # Convert temperature to float to handle Decimal values from database
     df["temperature"] = df["temperature"].astype(float)
@@ -79,9 +90,46 @@ def _cap_extreme_values(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def _deduplicate_timestamps(df: pd.DataFrame, output_dir: Path | None = None) -> pd.DataFrame:
-    """Per-device: remove duplicate timestamps."""
-    return df.drop_duplicates(subset=["device_label", "datetime", "temperature"]).copy()
+def _spread_duplicate_timestamps(
+    df: pd.DataFrame,
+    label_col: str = "device_label",
+    datetime_col: str = "datetime",
+) -> pd.DataFrame:
+    """Spread same-device duplicate timestamps before the next distinct timestamp.
+
+    Historical misconfiguration produced bursts where several readings for a
+    device received the same timestamp even though they were taken at different
+    moments. For a group of N readings at time A and the next distinct time B,
+    assign times A, A + (B-A)/N, ..., A + (N-1)*(B-A)/N. The next real reading
+    remains at B.
+    """
+    df = df.copy()
+    df[datetime_col] = pd.to_datetime(df[datetime_col])
+
+    sort_cols = [label_col, datetime_col]
+    if "id" in df.columns:
+        sort_cols.append("id")
+    df = df.sort_values(sort_cols)
+
+    for _, device_df in df.groupby(label_col, sort=False):
+        timestamp_groups = list(device_df.groupby(datetime_col, sort=True).groups.items())
+
+        for position, (_, group_index) in enumerate(timestamp_groups):
+            if len(group_index) < 2 or position == len(timestamp_groups) - 1:
+                continue
+
+            current_time = df.loc[group_index[0], datetime_col]
+            next_time = timestamp_groups[position + 1][0]
+            interval = next_time - current_time
+
+            if interval <= pd.Timedelta(0):
+                continue
+
+            step = interval / len(group_index)
+            for offset, row_index in enumerate(group_index):
+                df.loc[row_index, datetime_col] = current_time + step * offset
+
+    return df.sort_values(sort_cols).reset_index(drop=True)
 
 
 def _mark_data_gaps(df: pd.DataFrame, gap_multiplier: float = 1.5) -> pd.DataFrame:

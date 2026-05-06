@@ -1,43 +1,100 @@
-from pathlib import Path
-
 import pandas as pd
 
-from utils.logger import get_logger
-
-logger = get_logger(__name__)
+from pipeline.cleaning import _spread_duplicate_timestamps, clean_data
 
 
-def test_deduplication(df: pd.DataFrame, output_dir: Path | None = None) -> None:
-    """Verify that no duplicate (device, timestamp, temperature) rows remain."""
-    logger.info("Testing deduplication...")
-    dupes = df[
-        df.duplicated(
-            subset=["device_label", "datetime", "temperature"],
-            keep=False,
-        )
+def test_clean_data_converts_temperature_to_fahrenheit() -> None:
+    df = pd.DataFrame(
+        [
+            {"device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 0.0},
+            {"device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:05:00"), "temperature": 10.0},
+        ]
+    )
+
+    cleaned = clean_data(df)
+
+    assert cleaned["temperature"].tolist() == [32.0, 50.0]
+
+
+def test_spread_duplicate_timestamps_across_next_interval() -> None:
+    df = pd.DataFrame(
+        [
+            {"id": 1, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 60.0},
+            {"id": 2, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 61.0},
+            {"id": 3, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 62.0},
+            {"id": 4, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:30:00"), "temperature": 63.0},
+        ]
+    )
+
+    cleaned = _spread_duplicate_timestamps(df)
+
+    assert cleaned["datetime"].tolist() == [
+        pd.Timestamp("2026-01-01 00:00:00"),
+        pd.Timestamp("2026-01-01 00:10:00"),
+        pd.Timestamp("2026-01-01 00:20:00"),
+        pd.Timestamp("2026-01-01 00:30:00"),
     ]
 
-    logger.info("Found %d duplicate rows", len(dupes))
 
-    if output_dir:
-        dupes_file = output_dir / "duplicates.csv"
-        dupes.to_csv(dupes_file, index=False)
-        logger.info("Duplicate rows saved to %s", dupes_file)
+def test_spread_duplicate_timestamps_is_per_device() -> None:
+    df = pd.DataFrame(
+        [
+            {"id": 1, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 60.0},
+            {"id": 2, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 61.0},
+            {"id": 3, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:10:00"), "temperature": 62.0},
+            {"id": 4, "device_label": "plug-2", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 63.0},
+            {"id": 5, "device_label": "plug-2", "datetime": pd.Timestamp("2026-01-01 01:00:00"), "temperature": 64.0},
+        ]
+    )
 
-        # Save duplicate summary
-        dupes_summary = (
-            dupes.groupby(["device_label", "datetime", "temperature"])
-            .size()
-            .sort_values(ascending=False)
-            .head(20)
-            .reset_index(name="count")
-        )
-        summary_file = output_dir / "duplicates_summary.csv"
-        dupes_summary.to_csv(summary_file, index=False)
-        logger.info("Duplicate summary saved to %s", summary_file)
-    else:
-        logger.debug("Duplicate sample:\n%s", dupes.head(20))
-        logger.debug(
-            "Duplicate counts:\n%s",
-            dupes.groupby(["device_label", "datetime", "temperature"]).size().sort_values(ascending=False).head(20),
-        )
+    cleaned = _spread_duplicate_timestamps(df)
+    plug_1 = cleaned[cleaned["device_label"] == "plug-1"]
+    plug_2 = cleaned[cleaned["device_label"] == "plug-2"]
+
+    assert plug_1["datetime"].tolist() == [
+        pd.Timestamp("2026-01-01 00:00:00"),
+        pd.Timestamp("2026-01-01 00:05:00"),
+        pd.Timestamp("2026-01-01 00:10:00"),
+    ]
+    assert plug_2["datetime"].tolist() == [
+        pd.Timestamp("2026-01-01 00:00:00"),
+        pd.Timestamp("2026-01-01 01:00:00"),
+    ]
+
+
+def test_clean_data_preserves_exact_duplicate_readings() -> None:
+    df = pd.DataFrame(
+        [
+            {"id": 1, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 10.0},
+            {"id": 2, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 10.0},
+            {"id": 3, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:10:00"), "temperature": 11.0},
+        ]
+    )
+
+    cleaned = clean_data(df)
+
+    assert len(cleaned) == 3
+    assert cleaned["temperature"].tolist() == [50.0, 50.0, 51.8]
+    assert cleaned["datetime"].tolist() == [
+        pd.Timestamp("2026-01-01 00:00:00"),
+        pd.Timestamp("2026-01-01 00:05:00"),
+        pd.Timestamp("2026-01-01 00:10:00"),
+    ]
+
+
+def test_spread_duplicate_timestamps_leaves_final_duplicate_group_unchanged() -> None:
+    df = pd.DataFrame(
+        [
+            {"id": 1, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 60.0},
+            {"id": 2, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:10:00"), "temperature": 61.0},
+            {"id": 3, "device_label": "plug-1", "datetime": pd.Timestamp("2026-01-01 00:10:00"), "temperature": 62.0},
+        ]
+    )
+
+    cleaned = _spread_duplicate_timestamps(df)
+
+    assert cleaned["datetime"].tolist() == [
+        pd.Timestamp("2026-01-01 00:00:00"),
+        pd.Timestamp("2026-01-01 00:10:00"),
+        pd.Timestamp("2026-01-01 00:10:00"),
+    ]
