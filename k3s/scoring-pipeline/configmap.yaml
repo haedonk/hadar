@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scoring-pipeline-config
+  namespace: hadar
+data:
+  DB_DRIVER: postgresql+asyncpg
+  DB_HOST: postgres.db.svc.cluster.local
+  DB_NAME: zigbee_db
+  DB_PORT: "5432"
+  DEBUG: "false"
+  HADAR_DATA_DIR: /mnt/hadar-data
+  FEATURE_CONTEXT_HOURS: "6"
+  HOURLY_SCORING_LOOKBACK_HOURS: "1"
+  HOURLY_SCORING_OFFSET_HOURS: "1"
+  HOURLY_SCORING_OUTPUT_DIR: /mnt/hadar-data/output/hourly-scoring-runs
+  LOG_LEVEL: INFO
+  MODEL_ARTIFACT_DIR: /mnt/hadar-model-data/output/training-sweeps/20260506T220024Z_comprehensive-training-sweep/configs/full_c003_e100/models
+  MODEL_CONFIG_NAME: full_c003_e100
+  MODEL_RUN_ID: 20260506T220024Z_comprehensive-training-sweep
+  OUTPUT_TIMEZONE: America/New_York
+  SCHEDULER_CONFIG_PATH: /app/scoring-pipeline/configs/scheduler/scheduler.yaml
+  SCHEDULER_TIMEZONE: America/New_York

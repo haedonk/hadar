@@ -1,0 +1,14 @@
+timezone: America/New_York
+jobs:
+  - name: hourly_recent_readings_csv_export
+    type: hourly_recent_readings_csv_export
+    enabled: true
+    trigger: interval
+    hours: 1
+    lookback_hours: 1
+    offset_hours: 1
+    feature_context_hours: 6
+    model_artifact_dir: /mnt/hadar-model-data/output/training-sweeps/20260506T220024Z_comprehensive-training-sweep/configs/full_c003_e100/models
+    model_run_id: 20260506T220024Z_comprehensive-training-sweep
+    model_config_name: full_c003_e100
+    output_base_dir: /mnt/hadar-data/output/hourly-scoring-runs

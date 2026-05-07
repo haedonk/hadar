@@ -1,0 +1,8 @@
+APScheduler==3.10.4
+asyncpg==0.31.0
+joblib==1.4.2
+pandas==2.2.3
+python-dotenv==1.2.2
+PyYAML==6.0.2
+scikit-learn==1.6.1
+SQLAlchemy==2.0.49

@@ -13,6 +13,9 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `isolation-forest/deployment.yaml`: long-running APScheduler service for training sweeps.
 - `isolation-forest/cronjob.yaml`: legacy scheduled anomaly detection job, currently suspended.
 - `isolation-forest/secret.example.yaml`: placeholder secret shape only.
+- `scoring-pipeline/configmap.yaml`: non-secret hourly scoring dry-run settings.
+- `scoring-pipeline/deployment.yaml`: standalone service that exports recent readings on startup and hourly; reuses `isolation-forest-creds` for DB credentials.
+- `scoring-pipeline/secret.example.yaml`: placeholder secret shape only.
 
 ## Required External Services
 
@@ -22,6 +25,7 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - Docker images:
   - `haka9670/ingestion-pipeline:latest`
   - `haka9670/isolation-forest:latest`
+  - `haka9670/scoring-pipeline:latest`
 
 ## Before Applying
 
@@ -40,6 +44,8 @@ kubectl create secret generic isolation-forest-creds \
   -n hadar \
   --from-literal=DB_USER='USERNAME' \
   --from-literal=DB_PASSWORD='PASSWORD'
+
+# scoring-pipeline currently reuses isolation-forest-creds because it needs the same PostgreSQL DB_USER/DB_PASSWORD.
 ```
 
 ## Apply Order
@@ -49,9 +55,11 @@ kubectl apply -f k3s/namespace.yaml
 kubectl apply -f k3s/storage.yaml
 kubectl apply -f k3s/ingestion-pipeline/configmap.yaml
 kubectl apply -f k3s/isolation-forest/configmap.yaml
+kubectl apply -f k3s/scoring-pipeline/configmap.yaml
 kubectl apply -f k3s/ingestion-pipeline/deployment.yaml
 kubectl apply -f k3s/isolation-forest/cronjob.yaml
 kubectl apply -f k3s/isolation-forest/deployment.yaml
+kubectl apply -f k3s/scoring-pipeline/deployment.yaml
 ```
 
 ## Verify
@@ -59,6 +67,7 @@ kubectl apply -f k3s/isolation-forest/deployment.yaml
 ```bash
 kubectl -n hadar rollout status deployment/ingestion-pipeline
 kubectl -n hadar rollout status deployment/isolation-forest
+kubectl -n hadar rollout status deployment/scoring-pipeline
 kubectl -n hadar get cronjob isolation-forest
 kubectl -n hadar get pods
 ```
