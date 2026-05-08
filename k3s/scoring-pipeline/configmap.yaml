@@ -17,7 +17,9 @@ data:
   LOG_LEVEL: INFO
   MODEL_ARTIFACT_DIR: /mnt/hadar-model-data/output/training-sweeps/20260506T220024Z_comprehensive-training-sweep/configs/full_c003_e100/models
   MODEL_CONFIG_NAME: full_c003_e100
+  MODEL_PROMOTION_MARKER_PATH: /mnt/hadar-model-data/output/promoted_model.json
   MODEL_RUN_ID: 20260506T220024Z_comprehensive-training-sweep
   OUTPUT_TIMEZONE: America/New_York
   SCHEDULER_CONFIG_PATH: /app/scoring-pipeline/configs/scheduler/scheduler.yaml
   SCHEDULER_TIMEZONE: America/New_York
+  ENABLE_ANOMALY_EVENT_PERSISTENCE: "false"

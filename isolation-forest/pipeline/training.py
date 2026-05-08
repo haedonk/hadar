@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 import joblib
+import numpy as np
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 from sklearn.model_selection import train_test_split
@@ -16,6 +17,7 @@ from utils.logger import get_logger
 logger = get_logger(__name__)
 
 DEFAULT_MODELS_DIR = Path(config.DATA_DIR) / "models"
+FEATURE_STATS_VERSION = 1
 
 
 def train_per_device_models(
@@ -39,7 +41,8 @@ def train_per_device_models(
     output_dir = models_dir or DEFAULT_MODELS_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    df = extract_features(df, label_col=label_col)
+    device_temperature_stats = _compute_device_temperature_stats(df, label_col=label_col)
+    df = extract_features(df, label_col=label_col, device_stats=device_temperature_stats)
     df["anomaly"] = 1
 
     missing_features = [column for column in feature_cols if column not in df.columns]
@@ -63,6 +66,7 @@ def train_per_device_models(
             random_state=random_state,
             test_size=test_size,
             n_estimators=n_estimators,
+            temperature_stats=device_temperature_stats.get(device, {}),
         )
         device_stats.append(stats)
 
@@ -70,6 +74,38 @@ def train_per_device_models(
     logger.info(f"Per-device training summary:\n{summary_df.to_string(index=False)}")
 
     return df, summary_df
+
+
+def _compute_device_temperature_stats(
+    df: pd.DataFrame,
+    label_col: str,
+    temperature_col: str = "temperature",
+) -> dict[str, dict[str, float]]:
+    """Return per-device temperature mean/std (Fahrenheit) over all training rows.
+
+    Stats are computed once over the full cleaned, F-converted DataFrame so the
+    saved metadata reflects the same distribution the model was trained
+    against. ``std`` of zero (constant-temperature device) collapses to ``NaN``
+    -> serialized as ``NaN`` in the dict; downstream consumers replace it with
+    1.0 so the resulting z-score stays finite (and the trailing
+    ``fillna(0.0)`` in feature extraction zeros it out).
+    """
+    if label_col not in df.columns or temperature_col not in df.columns:
+        return {}
+
+    grouped = df.groupby(label_col, sort=False)[temperature_col]
+    means = grouped.mean()
+    stds = grouped.std()
+
+    stats: dict[str, dict[str, float]] = {}
+    for device, mean in means.items():
+        std = stds.get(device, np.nan)
+        std_value = float(std) if pd.notna(std) and float(std) != 0.0 else float("nan")
+        stats[device] = {
+            "temperature_mean_f": float(mean) if pd.notna(mean) else 0.0,
+            "temperature_std_f": std_value,
+        }
+    return stats
 
 
 def _train_device_model(
@@ -82,6 +118,7 @@ def _train_device_model(
     random_state: int,
     test_size: float,
     n_estimators: int,
+    temperature_stats: dict[str, float],
 ) -> tuple[pd.DataFrame, dict]:
     """Train and save artifacts for a single device."""
     X = group[feature_cols].astype(float)
@@ -106,6 +143,7 @@ def _train_device_model(
         row_count=len(group),
         contamination=contamination,
         n_estimators=n_estimators,
+        temperature_stats=temperature_stats,
     )
 
     return df, _get_trained_device_stats(df, group, device, artifact_paths)
@@ -120,6 +158,7 @@ def _save_device_artifacts(
     row_count: int,
     contamination: float,
     n_estimators: int,
+    temperature_stats: dict[str, float],
 ) -> dict[str, str]:
     """Save model, scaler, and metadata artifacts for a device."""
     safe_name = _safe_artifact_name(device)
@@ -139,6 +178,8 @@ def _save_device_artifacts(
         "trained_at": datetime.now(timezone.utc).isoformat(),
         "model_path": str(model_path),
         "scaler_path": str(scaler_path),
+        "device_stats": _serialize_device_stats(temperature_stats),
+        "feature_stats_version": FEATURE_STATS_VERSION,
     }
     metadata_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
 
@@ -146,6 +187,24 @@ def _save_device_artifacts(
         "model_path": str(model_path),
         "scaler_path": str(scaler_path),
         "metadata_path": str(metadata_path),
+    }
+
+
+def _serialize_device_stats(stats: dict[str, float]) -> dict[str, float]:
+    """Convert stat values to plain floats, replacing NaN/zero std with 1.0.
+
+    The training code treats a zero/NaN std as "constant device" and lets the
+    trailing ``fillna(0.0)`` in feature extraction zero the z-score. The stored
+    metadata mirrors that same fallback (std = 1.0) so scoring callers can
+    apply ``(t - mean) / std`` directly without divide-by-zero risk.
+    """
+    mean = stats.get("temperature_mean_f", 0.0)
+    std = stats.get("temperature_std_f", 1.0)
+    mean_value = float(mean) if mean is not None and np.isfinite(mean) else 0.0
+    std_value = float(std) if std is not None and np.isfinite(std) and float(std) != 0.0 else 1.0
+    return {
+        "temperature_mean_f": mean_value,
+        "temperature_std_f": std_value,
     }
 
 

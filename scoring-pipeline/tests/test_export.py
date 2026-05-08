@@ -136,3 +136,42 @@ async def test_export_recent_readings_csv_writes_header_for_empty_results(tmp_pa
     exported = pd.read_csv(output_path)
     assert exported.empty
     assert list(exported.columns) == HOURLY_EXPORT_COLUMNS
+
+
+@pytest.mark.asyncio
+async def test_export_recent_readings_csv_window_mask_is_half_open_in_utc(tmp_path) -> None:
+    """Verify the export-time window mask is [start, end) on both sides in UTC."""
+    window_start = datetime(2026, 5, 6, 17, 0, tzinfo=UTC)
+    window_end = datetime(2026, 5, 6, 18, 0, tzinfo=UTC)
+
+    async def fake_fetcher(**kwargs):
+        return pd.DataFrame(
+            [
+                # 1s before start: excluded
+                {"id": 1, "device_id": "d", "device_label": "office_1", "temperature": 70.0,
+                 "datetime": window_start - timedelta(seconds=1)},
+                # exactly start: included
+                {"id": 2, "device_id": "d", "device_label": "office_1", "temperature": 70.0,
+                 "datetime": window_start},
+                # mid window: included
+                {"id": 3, "device_id": "d", "device_label": "office_1", "temperature": 70.0,
+                 "datetime": window_start + timedelta(minutes=30)},
+                # 1s before end: included
+                {"id": 4, "device_id": "d", "device_label": "office_1", "temperature": 70.0,
+                 "datetime": window_end - timedelta(seconds=1)},
+                # exactly end: excluded (half-open interval)
+                {"id": 5, "device_id": "d", "device_label": "office_1", "temperature": 70.0,
+                 "datetime": window_end},
+            ]
+        )
+
+    output_path = await export_recent_readings_csv(
+        output_base_dir=tmp_path,
+        window_start=window_start,
+        window_end=window_end,
+        run_timestamp=datetime(2026, 5, 6, 18, 1, 2, tzinfo=UTC),
+        fetcher=fake_fetcher,
+    )
+
+    exported = pd.read_csv(output_path)
+    assert sorted(exported["id"].tolist()) == [2, 3, 4]

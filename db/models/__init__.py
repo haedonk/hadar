@@ -1,4 +1,5 @@
 # db/models/__init__.py
+from .anomaly_event import AnomalyEvent
 from .appliance import Appliance
 from .base import Base
 from .device import Device
@@ -25,4 +26,5 @@ __all__ = [
     "PlugLoadGroup",
     "PlugLoadGroupHistory",
     "TopicPayloadIdentifier",
+    "AnomalyEvent",
 ]

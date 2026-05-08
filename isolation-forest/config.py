@@ -34,5 +34,11 @@ class Config:
     CLEAN_DATA: bool = os.getenv("CLEAN_DATA", "True").lower() in ("true", "1", "yes")
     ISOLATION_FOREST_CONTAMINATION: float = float(os.getenv("ISOLATION_FOREST_CONTAMINATION", "0.05"))
 
+    PROMOTION_MARKER_PATH: str = os.getenv(
+        "PROMOTION_MARKER_PATH",
+        str(Path(DATA_DIR) / "output" / "promoted_model.json"),
+    )
+    PROMOTED_CONFIG_NAME: str = os.getenv("PROMOTED_CONFIG_NAME", "full_c003_e100")
+
 
 config = Config()

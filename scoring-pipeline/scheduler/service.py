@@ -9,6 +9,7 @@ from typing import Any
 
 from config import config
 from pipeline.export import export_recent_readings_csv
+from pipeline.promotion import load_promoted_model
 from scheduler.config import ScheduledScoringJobConfig, ScoringSchedulerConfig, load_scheduler_config
 
 logger = logging.getLogger(__name__)
@@ -80,24 +81,35 @@ def build_scheduler(timezone: str):
 
 
 def build_exporter(job_config: ScheduledScoringJobConfig | None) -> Exporter:
-    """Build an exporter callable from scheduler config."""
+    """Build an exporter callable from scheduler config.
+
+    Each invocation re-reads the promotion marker (once per scoring run) so a
+    freshly promoted model is picked up without restarting the service. The
+    marker takes precedence over YAML-pinned ``model_*`` fields; if it is
+    absent/malformed the loader falls back to the env-pinned defaults.
+    """
     if job_config is None:
         return export_recent_readings_csv
 
     async def configured_exporter():
+        promoted = load_promoted_model()
         logger.debug(
-            "Running configured hourly exporter: output_base_dir=%s lookback_hours=%s",
+            "Running configured hourly exporter: output_base_dir=%s lookback_hours=%s "
+            "model_run_id=%s model_config_name=%s model_source=%s",
             job_config.output_base_dir,
             job_config.lookback_hours,
+            promoted.run_id,
+            promoted.config_name,
+            promoted.source,
         )
         return await export_recent_readings_csv(
             output_base_dir=job_config.output_base_dir,
             lookback=timedelta(hours=job_config.lookback_hours),
             offset=timedelta(hours=job_config.offset_hours),
             feature_context=timedelta(hours=job_config.feature_context_hours),
-            model_artifact_dir=job_config.model_artifact_dir,
-            model_run_id=job_config.model_run_id,
-            model_config_name=job_config.model_config_name,
+            model_artifact_dir=promoted.artifact_dir,
+            model_run_id=promoted.run_id,
+            model_config_name=promoted.config_name,
         )
 
     return configured_exporter

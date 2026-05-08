@@ -1,3 +1,5 @@
+import json
+import os
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -17,6 +19,8 @@ from pipeline.training import train_per_device_models
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+PROMOTION_MARKER_SCHEMA_VERSION = 1
 
 
 async def run_training_sweep_from_file(config_path: Path, output_base_dir: Path | None = None) -> Path:
@@ -64,8 +68,58 @@ def run_training_sweep(
     config_summary = summarize_sweep_configs(sweep_summary)
     config_summary.to_csv(run_dir / "config_summary.csv", index=False)
 
+    _write_promotion_marker(run_dir=run_dir, sweep_summary=sweep_summary)
+
     logger.info("Training sweep completed: %s", run_dir)
     return run_dir
+
+
+def _write_promotion_marker(run_dir: Path, sweep_summary: pd.DataFrame) -> None:
+    """Atomically publish ``promoted_model.json`` for the scoring service.
+
+    Skips writing when the sweep produced no successfully trained device for
+    the configured promotion target so any prior known-good marker is left in
+    place for scoring to keep using.
+    """
+    marker_path = Path(config.PROMOTION_MARKER_PATH)
+    promoted_config = config.PROMOTED_CONFIG_NAME
+
+    if sweep_summary.empty or "config_name" not in sweep_summary.columns:
+        logger.warning("Skipping promotion marker write: sweep summary has no configs")
+        return
+
+    matching_rows = sweep_summary[sweep_summary["config_name"] == promoted_config]
+    if matching_rows.empty:
+        logger.warning(
+            "Skipping promotion marker write: configured PROMOTED_CONFIG_NAME=%s not present in sweep",
+            promoted_config,
+        )
+        return
+
+    if "status" in matching_rows.columns:
+        trained_rows = matching_rows[matching_rows["status"] == "trained"]
+    else:
+        trained_rows = matching_rows
+
+    if trained_rows.empty:
+        logger.warning(
+            "Skipping promotion marker write: no devices trained successfully for config %s",
+            promoted_config,
+        )
+        return
+
+    payload = {
+        "run_id": run_dir.name,
+        "config_name": promoted_config,
+        "promoted_at": datetime.now(timezone.utc).isoformat(),
+        "schema_version": PROMOTION_MARKER_SCHEMA_VERSION,
+    }
+
+    marker_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp_path = marker_path.with_suffix(marker_path.suffix + ".tmp")
+    tmp_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    os.replace(tmp_path, marker_path)
+    logger.info("Wrote promotion marker %s -> %s", marker_path, payload)
 
 
 def run_training_config(df: pd.DataFrame, output_dir: Path, config: TrainingSweepConfig) -> pd.DataFrame:

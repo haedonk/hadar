@@ -1,9 +1,10 @@
 import json
+import math
 
 import pandas as pd
 
 from pipeline.features import MODEL_FEATURE_COLUMNS
-from pipeline.training import train_per_device_models
+from pipeline.training import FEATURE_STATS_VERSION, train_per_device_models
 
 
 def _training_df(device: str = "sensor-1", rows: int = 12) -> pd.DataFrame:
@@ -81,3 +82,48 @@ def test_train_per_device_models_validates_requested_feature_columns(tmp_path) -
         assert "missing_feature" in str(error)
     else:
         raise AssertionError("Expected missing feature columns to raise ValueError")
+
+
+def test_train_per_device_models_writes_device_stats_to_metadata(tmp_path) -> None:
+    df = _training_df(device="sensor-1", rows=12)
+
+    train_per_device_models(df, models_dir=tmp_path, random_state=7)
+
+    metadata = json.loads((tmp_path / "sensor-1_metadata.json").read_text(encoding="utf-8"))
+
+    assert metadata["feature_stats_version"] == FEATURE_STATS_VERSION
+    assert "device_stats" in metadata
+
+    device_stats = metadata["device_stats"]
+    assert isinstance(device_stats["temperature_mean_f"], float)
+    assert isinstance(device_stats["temperature_std_f"], float)
+    assert math.isfinite(device_stats["temperature_mean_f"])
+    assert math.isfinite(device_stats["temperature_std_f"])
+    assert device_stats["temperature_std_f"] > 0.0
+
+    expected_mean = float(df["temperature"].mean())
+    expected_std = float(df["temperature"].std())
+    assert math.isclose(device_stats["temperature_mean_f"], expected_mean, rel_tol=0, abs_tol=1e-9)
+    assert math.isclose(device_stats["temperature_std_f"], expected_std, rel_tol=0, abs_tol=1e-9)
+
+
+def test_train_per_device_models_persists_unit_std_for_constant_temperature_device(tmp_path) -> None:
+    df = pd.DataFrame(
+        [
+            {
+                "device_label": "sensor-1",
+                "datetime": pd.Timestamp("2026-01-01 00:00:00") + pd.Timedelta(minutes=30 * index),
+                "temperature": 70.0,
+            }
+            for index in range(12)
+        ]
+    )
+
+    train_per_device_models(df, models_dir=tmp_path, random_state=7)
+
+    metadata = json.loads((tmp_path / "sensor-1_metadata.json").read_text(encoding="utf-8"))
+    device_stats = metadata["device_stats"]
+
+    assert device_stats["temperature_mean_f"] == 70.0
+    # std collapses to 1.0 to keep z-score finite (and zero) for downstream consumers.
+    assert device_stats["temperature_std_f"] == 1.0

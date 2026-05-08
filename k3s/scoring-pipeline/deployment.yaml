@@ -16,7 +16,7 @@ spec:
       containers:
         - name: scoring-pipeline
           image: haka9670/scoring-pipeline:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command:
             - python
             - main.py

@@ -95,3 +95,34 @@ def test_extract_features_does_not_emit_nan_or_infinite_values_for_single_row_de
 
     assert features[MODEL_FEATURE_COLUMNS].notna().all().all()
     assert features["temperature_rate_per_hour"].tolist() == [0.0]
+
+
+def test_extract_features_uses_supplied_device_stats_for_zscore() -> None:
+    df = pd.DataFrame(
+        [
+            {"device_label": "sensor-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 72.0},
+            {"device_label": "sensor-1", "datetime": pd.Timestamp("2026-01-01 01:00:00"), "temperature": 78.0},
+        ]
+    )
+    device_stats = {"sensor-1": {"temperature_mean_f": 70.0, "temperature_std_f": 2.0}}
+
+    features = extract_features(df, device_stats=device_stats)
+
+    # Z-scores match (t - mean) / std exactly because explicit stats were provided.
+    assert features["temperature_zscore"].round(6).tolist() == [1.0, 4.0]
+
+
+def test_extract_features_constant_temperature_device_with_unit_std_yields_zero_zscore() -> None:
+    df = pd.DataFrame(
+        [
+            {"device_label": "sensor-1", "datetime": pd.Timestamp("2026-01-01 00:00:00"), "temperature": 70.0},
+            {"device_label": "sensor-1", "datetime": pd.Timestamp("2026-01-01 01:00:00"), "temperature": 70.0},
+        ]
+    )
+    # Mirrors the persisted-metadata fallback: std=1.0 for a constant device.
+    device_stats = {"sensor-1": {"temperature_mean_f": 70.0, "temperature_std_f": 1.0}}
+
+    features = extract_features(df, device_stats=device_stats)
+
+    assert features["temperature_zscore"].tolist() == [0.0, 0.0]
+    assert features["temperature_zscore"].notna().all()

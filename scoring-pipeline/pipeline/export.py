@@ -99,10 +99,12 @@ async def export_recent_readings_csv(
         )
         logger.debug("Scored DataFrame for hourly CSV export: shape=%s columns=%s", df.shape, list(df.columns))
 
-    target_mask = (pd.to_datetime(df["datetime"], utc=True) >= resolved_start) & (
-        pd.to_datetime(df["datetime"], utc=True) < resolved_end
-    )
-    export_df = with_hourly_export_columns(df.loc[target_mask].copy())
+    df_utc = pd.to_datetime(df["datetime"], utc=True)
+    start_utc = resolved_start.astimezone(UTC)
+    end_utc = resolved_end.astimezone(UTC)
+    target_mask = (df_utc >= start_utc) & (df_utc < end_utc)
+    target_df = df.loc[target_mask].copy()
+    export_df = with_hourly_export_columns(target_df)
     export_df = convert_datetime_columns_to_output_timezone(export_df)
     logger.debug("Hourly CSV export DataFrame shape after schema normalization: %s", export_df.shape)
 
@@ -116,6 +118,14 @@ async def export_recent_readings_csv(
         output_path,
         resolved_run_timestamp.isoformat(),
     )
+
+    if model_artifact_dir is not None and config.ENABLE_ANOMALY_EVENT_PERSISTENCE:
+        await _persist_anomaly_events(
+            target_df,
+            model_run_id=model_run_id or config.MODEL_RUN_ID,
+            model_config_name=model_config_name or config.MODEL_CONFIG_NAME,
+            scored_at=resolved_run_timestamp,
+        )
     return output_path
 
 
@@ -163,3 +173,36 @@ def format_window_for_log(window_start: datetime, window_end: datetime) -> str:
     formatted_start = window_start.astimezone(output_timezone).isoformat()
     formatted_end = window_end.astimezone(output_timezone).isoformat()
     return f"{formatted_start} to {formatted_end}"
+
+
+async def _persist_anomaly_events(
+    target_df: pd.DataFrame,
+    *,
+    model_run_id: str,
+    model_config_name: str,
+    scored_at: datetime,
+) -> None:
+    """Upsert anomalies for the target window. Logs and swallows DB failures.
+
+    The CSV remains the authoritative dry-run audit trail — DB persistence is
+    additive and must not prevent the CSV from being considered successful.
+    """
+    try:
+        from db.session import get_db
+        from pipeline.persistence import upsert_anomaly_events
+
+        async with get_db() as session:
+            persisted = await upsert_anomaly_events(
+                session,
+                target_df,
+                model_run_id=model_run_id,
+                model_config_name=model_config_name,
+                scored_at=scored_at,
+            )
+        logger.info("Anomaly event persistence: %s row(s) upserted", persisted)
+    except Exception:
+        logger.exception(
+            "Anomaly event persistence failed for run_id=%s config_name=%s; CSV remains authoritative",
+            model_run_id,
+            model_config_name,
+        )

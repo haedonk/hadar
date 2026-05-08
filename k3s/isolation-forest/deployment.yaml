@@ -16,7 +16,7 @@ spec:
       containers:
         - name: isolation-forest
           image: haka9670/isolation-forest:latest
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command:
             - python
             - scheduler/service.py

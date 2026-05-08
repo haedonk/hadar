@@ -32,6 +32,13 @@ class Config:
     )
     MODEL_RUN_ID: str = os.getenv("MODEL_RUN_ID", "20260506T220024Z_comprehensive-training-sweep")
     MODEL_CONFIG_NAME: str = os.getenv("MODEL_CONFIG_NAME", "full_c003_e100")
+    MODEL_PROMOTION_MARKER_PATH: str = os.getenv(
+        "MODEL_PROMOTION_MARKER_PATH",
+        "/mnt/hadar-model-data/output/promoted_model.json",
+    )
+    ENABLE_ANOMALY_EVENT_PERSISTENCE: bool = os.getenv(
+        "ENABLE_ANOMALY_EVENT_PERSISTENCE", "false"
+    ).lower() in ("true", "1", "yes")
     SCHEDULER_TIMEZONE: str = os.getenv("SCHEDULER_TIMEZONE", "America/New_York")
     OUTPUT_TIMEZONE: str = os.getenv("OUTPUT_TIMEZONE", SCHEDULER_TIMEZONE)
     SCHEDULER_CONFIG_PATH: str = os.getenv(

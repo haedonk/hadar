@@ -21,8 +21,17 @@ def extract_features(
     label_col: str = "device_label",
     datetime_col: str = "datetime",
     temperature_col: str = "temperature",
+    *,
+    device_stats: dict[str, dict[str, float]] | None = None,
 ) -> pd.DataFrame:
-    """Build model-ready temperature features per device."""
+    """Build model-ready temperature features per device.
+
+    When ``device_stats`` is provided, the per-device temperature z-score is
+    computed against the supplied ``temperature_mean_f`` / ``temperature_std_f``
+    constants (the values stored at training time). When omitted, the legacy
+    in-frame ``groupby(label_col).transform(...)`` behaviour is preserved so
+    existing callers keep working.
+    """
     df = df.copy()
     df[datetime_col] = pd.to_datetime(df[datetime_col])
     df[temperature_col] = df[temperature_col].astype(float)
@@ -35,7 +44,7 @@ def extract_features(
     df = _add_rolling_temperature_features(df, label_col, datetime_col, temperature_col)
     df = _add_rate_of_change_feature(df, label_col, datetime_col, temperature_col)
     df = _add_time_features(df, datetime_col)
-    df = _add_temperature_zscore(df, label_col, temperature_col)
+    df = _add_temperature_zscore(df, label_col, temperature_col, device_stats=device_stats)
 
     return df.replace([np.inf, -np.inf], 0.0).fillna(0.0)
 
@@ -84,10 +93,38 @@ def _add_time_features(df: pd.DataFrame, datetime_col: str) -> pd.DataFrame:
     return df
 
 
-def _add_temperature_zscore(df: pd.DataFrame, label_col: str, temperature_col: str) -> pd.DataFrame:
+def _add_temperature_zscore(
+    df: pd.DataFrame,
+    label_col: str,
+    temperature_col: str,
+    *,
+    device_stats: dict[str, dict[str, float]] | None = None,
+) -> pd.DataFrame:
+    """Add per-device temperature z-score normalization.
+
+    If ``device_stats`` is provided, each row uses the supplied per-device
+    ``temperature_mean_f`` / ``temperature_std_f`` constants. Otherwise the
+    legacy in-frame ``groupby(label_col).transform(...)`` behaviour is
+    preserved so existing callers (tests, ad-hoc scripts) stay correct.
+
+    A ``std`` of zero (or missing) is treated as ``NaN`` so the resulting
+    z-score collapses to zero via the trailing ``fillna(0.0)`` — matching the
+    legacy behaviour for constant-temperature devices.
+    """
     df = df.copy()
-    grouped = df.groupby(label_col, sort=False)[temperature_col]
-    mean = grouped.transform("mean")
-    std = grouped.transform("std").replace(0, np.nan)
+
+    if device_stats is None:
+        grouped = df.groupby(label_col, sort=False)[temperature_col]
+        mean = grouped.transform("mean")
+        std = grouped.transform("std").replace(0, np.nan)
+        df["temperature_zscore"] = ((df[temperature_col] - mean) / std).fillna(0.0)
+        return df
+
+    mean_map = {device: float(stats.get("temperature_mean_f", 0.0)) for device, stats in device_stats.items()}
+    std_map = {
+        device: float(stats.get("temperature_std_f", 0.0)) or np.nan for device, stats in device_stats.items()
+    }
+    mean = df[label_col].map(mean_map)
+    std = df[label_col].map(std_map).replace(0, np.nan)
     df["temperature_zscore"] = ((df[temperature_col] - mean) / std).fillna(0.0)
     return df

@@ -1,5 +1,6 @@
 # ingest/mqtt_consumer.py
 import asyncio
+import concurrent.futures
 import json
 import logging
 import threading
@@ -12,6 +13,26 @@ from services.assignment_service import AssignmentService
 from services.topic_payload_identifier_service import TopicPayloadIdentifierService
 
 logger = logging.getLogger(__name__)
+
+
+def _log_submission_failure(future: concurrent.futures.Future, *, context: str) -> None:
+    """Done-callback for futures returned by ``asyncio.run_coroutine_threadsafe``.
+
+    Logs any exception raised by the submitted coroutine so failures don't get
+    swallowed silently when the future is otherwise discarded. Non-blocking:
+    ``add_done_callback`` only fires once the future has resolved, so reading
+    ``future.exception()`` returns immediately.
+    """
+    if future.cancelled():
+        logger.warning("Background coroutine cancelled: %s", context)
+        return
+    exc = future.exception()
+    if exc is not None:
+        logger.error(
+            "Background coroutine failed: %s",
+            context,
+            exc_info=exc,
+        )
 
 
 class MQTTConsumer:
@@ -47,8 +68,18 @@ class MQTTConsumer:
             daemon=True,
         )
         self._assignment_thread.start()
-        asyncio.run_coroutine_threadsafe(self.assignment_service.start(), self.assignment_loop)
-        asyncio.run_coroutine_threadsafe(self.topic_service.get_all_identifiers(), self.assignment_loop)
+        start_future = asyncio.run_coroutine_threadsafe(
+            self.assignment_service.start(), self.assignment_loop
+        )
+        start_future.add_done_callback(
+            lambda f: _log_submission_failure(f, context="assignment_service.start")
+        )
+        identifiers_future = asyncio.run_coroutine_threadsafe(
+            self.topic_service.get_all_identifiers(), self.assignment_loop
+        )
+        identifiers_future.add_done_callback(
+            lambda f: _log_submission_failure(f, context="topic_service.get_all_identifiers")
+        )
         logger.debug("Assignment worker ensured and started if not alive.")
 
     def on_connect(self, client, userdata, flags, rc, properties=None):
@@ -85,16 +116,21 @@ class MQTTConsumer:
                 logger.warning(f"Failed to parse JSON payload for topic {topic}, using empty dict")
                 parsed_payload = {}
 
-            asyncio.run_coroutine_threadsafe(
+            insert_future = asyncio.run_coroutine_threadsafe(
                 self.topic_service.insert_if_not_exists(
                     topic, parsed_payload, event.get("type", None) if event else None
                 ),
                 self.assignment_loop,
             )
+            insert_future.add_done_callback(
+                lambda f, ctx=f"topic_service.insert_if_not_exists topic={topic}": _log_submission_failure(
+                    f, context=ctx
+                )
+            )
         except Exception as e:
             logger.error(f"Error processing message from topic {msg.topic}: {e}", exc_info=True)
             # Log to error database asynchronously
-            asyncio.run_coroutine_threadsafe(
+            error_future = asyncio.run_coroutine_threadsafe(
                 self._get_error_log_service().log_exception(
                     source="mqtt_consumer",
                     error_type="message_processing_error",
@@ -103,6 +139,11 @@ class MQTTConsumer:
                     additional_context=f"Failed to process message from topic {msg.topic}",
                 ),
                 self.assignment_loop,
+            )
+            error_future.add_done_callback(
+                lambda f, ctx=f"error_log_service.log_exception topic={msg.topic}": _log_submission_failure(
+                    f, context=ctx
+                )
             )
 
     def start(self):
