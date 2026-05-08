@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: isolation-forest
-          image: haka9670/isolation-forest:latest
+          image: haka9670/isolation-forest:65708ed
           imagePullPolicy: IfNotPresent
           command:
             - python

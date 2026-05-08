@@ -23,8 +23,8 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - Host path `/mnt/truenas-hadar` available on the k3s node that binds `hadar-truenas-pv`.
 - Docker images:
   - `haka9670/ingestion-pipeline:latest`
-  - `haka9670/isolation-forest:latest`
-  - `haka9670/scoring-pipeline:latest`
+  - `haka9670/isolation-forest:65708ed`
+  - `haka9670/scoring-pipeline:65708ed`
 
 The scoring and isolation-forest manifests use `imagePullPolicy: IfNotPresent`; rebuild or preload new image tags before rollout, and prefer immutable tags over `latest` for production deploys.
 
