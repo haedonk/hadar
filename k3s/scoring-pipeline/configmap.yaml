@@ -22,4 +22,4 @@ data:
   OUTPUT_TIMEZONE: America/New_York
   SCHEDULER_CONFIG_PATH: /app/scoring-pipeline/configs/scheduler/scheduler.yaml
   SCHEDULER_TIMEZONE: America/New_York
-  ENABLE_ANOMALY_EVENT_PERSISTENCE: "false"
+  ENABLE_ANOMALY_EVENT_PERSISTENCE: "true"
