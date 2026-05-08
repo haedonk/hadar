@@ -16,6 +16,7 @@ __pycache__/
 .windsurf/
 
 # Local tooling
+.claude/
 .codex
 .mcp/
 
