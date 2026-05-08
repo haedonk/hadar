@@ -11,7 +11,6 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `ingestion-pipeline/secret.example.yaml`: placeholder secret shape only.
 - `isolation-forest/configmap.yaml`: non-secret isolation forest settings.
 - `isolation-forest/deployment.yaml`: long-running APScheduler service for training sweeps.
-- `isolation-forest/cronjob.yaml`: legacy scheduled anomaly detection job, currently suspended.
 - `isolation-forest/secret.example.yaml`: placeholder secret shape only.
 - `scoring-pipeline/configmap.yaml`: non-secret hourly scoring settings, including the promotion marker path and disabled-by-default anomaly event persistence kill switch.
 - `scoring-pipeline/deployment.yaml`: standalone service that exports recent readings on startup and hourly; reuses `isolation-forest-creds` for DB credentials.
@@ -59,7 +58,6 @@ kubectl apply -f k3s/ingestion-pipeline/configmap.yaml
 kubectl apply -f k3s/isolation-forest/configmap.yaml
 kubectl apply -f k3s/scoring-pipeline/configmap.yaml
 kubectl apply -f k3s/ingestion-pipeline/deployment.yaml
-kubectl apply -f k3s/isolation-forest/cronjob.yaml
 kubectl apply -f k3s/isolation-forest/deployment.yaml
 kubectl apply -f k3s/scoring-pipeline/deployment.yaml
 ```
@@ -70,6 +68,5 @@ kubectl apply -f k3s/scoring-pipeline/deployment.yaml
 kubectl -n hadar rollout status deployment/ingestion-pipeline
 kubectl -n hadar rollout status deployment/isolation-forest
 kubectl -n hadar rollout status deployment/scoring-pipeline
-kubectl -n hadar get cronjob isolation-forest
 kubectl -n hadar get pods
 ```
