@@ -1,19 +1,69 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: scoring-pipeline
+  name: hadar-app
   namespace: hadar
 spec:
-  replicas: 1
+  replicas: 0
   selector:
     matchLabels:
-      app: scoring-pipeline
+      app: hadar-app
   template:
     metadata:
       labels:
-        app: scoring-pipeline
+        app: hadar-app
     spec:
       containers:
+        - name: isolation-forest
+          image: haka9670/isolation-forest:65708ed
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - scheduler/service.py
+            - --config
+            - configs/scheduler/scheduler.yaml
+          envFrom:
+            - secretRef:
+                name: isolation-forest-creds
+            - configMapRef:
+                name: isolation-forest-config
+          env:
+            - name: HADAR_DATA_DIR
+              value: /mnt/hadar-data
+            - name: MPLCONFIGDIR
+              value: /tmp/matplotlib
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "test -d /proc/1 && test -w /mnt/hadar-data/output && test -r /app/isolation-forest/configs/training-sweeps/comprehensive-training-sweep.csv"
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            failureThreshold: 3
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "test -d /proc/1 && test -d /mnt/hadar-data/output"
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            failureThreshold: 3
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: hadar-data
+              mountPath: /mnt/hadar-data
+              subPath: isolation-forest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+
         - name: scoring-pipeline
           image: haka9670/scoring-pipeline:65708ed
           imagePullPolicy: IfNotPresent
@@ -72,6 +122,7 @@ spec:
             requests:
               cpu: 100m
               memory: 256Mi
+
       volumes:
         - name: hadar-data
           persistentVolumeClaim:
