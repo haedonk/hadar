@@ -14,7 +14,7 @@ function formatTickDate(ts) {
   return `${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
 }
 
-function CustomTooltip({ active, payload, label, unit, dataKey }) {
+function CustomTooltip({ active, payload, label, unit }) {
   if (!active || !payload || payload.length === 0) return null;
   const value = payload[0]?.value;
   return (

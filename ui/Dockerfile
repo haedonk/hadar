@@ -7,9 +7,8 @@ RUN npm ci --ignore-scripts
 
 COPY . .
 
-# Optional: override API base URL at build time
-# docker build --build-arg VITE_API_URL=http://hadar-api/api .
-ARG VITE_API_URL=""
+# Required for production builds — pass via --build-arg VITE_API_URL=http://<node-ip>:30800
+ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
 
 RUN npm run build
