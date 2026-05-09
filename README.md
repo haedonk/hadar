@@ -4,6 +4,7 @@ Hadar is a smart home monitoring project for ingesting Zigbee/MQTT sensor events
 
 ## Components
 
+- `api/`: FastAPI backend for the Hadar dashboard.
 - `ingestion-pipeline/`: MQTT consumer and processor for energy and temperature events.
 - `isolation-forest/`: scheduled anomaly detection pipeline.
 - `db/`: shared SQLAlchemy database models and session setup.
@@ -29,6 +30,7 @@ pip install -r requirements.txt
 Service-specific runtime dependency files are still kept for Docker builds and deployable service boundaries:
 
 ```text
+api/requirements.txt
 ingestion-pipeline/requirements.txt
 isolation-forest/requirements.txt
 ```
@@ -49,6 +51,7 @@ Build from the repository root so the shared `db/` package is included:
 ```bash
 docker build -f ingestion-pipeline/Dockerfile -t haka9670/ingestion-pipeline:latest .
 docker build -f isolation-forest/Dockerfile -t haka9670/isolation-forest:latest .
+docker build -f api/Dockerfile -t haka9670/hadar-api:latest .
 ```
 
 ## k3s Deployment
