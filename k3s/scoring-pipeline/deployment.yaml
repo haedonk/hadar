@@ -25,6 +25,26 @@ spec:
                 name: isolation-forest-creds
             - configMapRef:
                 name: scoring-pipeline-config
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "test -d /proc/1 && test -w /mnt/hadar-data/output/hourly-scoring-runs && test -r /mnt/hadar-model-data/output/promoted_model.json"
+            initialDelaySeconds: 20
+            periodSeconds: 30
+            failureThreshold: 3
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "test -d /proc/1 && test -d /mnt/hadar-data/output/hourly-scoring-runs"
+            initialDelaySeconds: 60
+            periodSeconds: 60
+            failureThreshold: 3
+            timeoutSeconds: 5
           volumeMounts:
             - name: hadar-data
               mountPath: /mnt/hadar-data

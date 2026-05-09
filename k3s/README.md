@@ -21,6 +21,7 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `api/secret.example.yaml`: placeholder API database credentials.
 - `ui/deployment.yaml`: nginx-served static React dashboard.
 - `ui/service.yaml`: NodePort service on port 30080 — reach the dashboard at `http://<node-ip>:30080`.
+- `hadar-app/deployment.yaml`: combined 2-container pod (isolation-forest + scoring-pipeline). Starts at `replicas: 0`; scale up only after scaling the separate isolation-forest and scoring-pipeline Deployments to 0. Do not run both at the same time.
 
 
 ## Required External Services
