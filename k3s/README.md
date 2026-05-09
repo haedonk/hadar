@@ -11,7 +11,6 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `ingestion-pipeline/secret.example.yaml`: placeholder secret shape only.
 - `isolation-forest/configmap.yaml`: non-secret isolation forest settings.
 - `isolation-forest/deployment.yaml`: long-running APScheduler service for training sweeps.
-- `isolation-forest/cronjob.yaml`: legacy scheduled anomaly detection job, currently suspended.
 - `isolation-forest/secret.example.yaml`: placeholder secret shape only.
 - `scoring-pipeline/configmap.yaml`: non-secret hourly scoring settings, including the promotion marker path and disabled-by-default anomaly event persistence kill switch.
 - `scoring-pipeline/deployment.yaml`: standalone service that exports recent readings on startup and hourly; reuses `isolation-forest-creds` for DB credentials.
@@ -28,8 +27,8 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - Host path `/mnt/truenas-hadar` available on the k3s node that binds `hadar-truenas-pv`.
 - Docker images:
   - `haka9670/ingestion-pipeline:latest`
-  - `haka9670/isolation-forest:latest`
-  - `haka9670/scoring-pipeline:latest`
+  - `haka9670/isolation-forest:65708ed`
+  - `haka9670/scoring-pipeline:65708ed`
   - `haka9670/hadar-api:latest`
 
 The scoring and isolation-forest manifests use `imagePullPolicy: IfNotPresent`; rebuild or preload new image tags before rollout, and prefer immutable tags over `latest` for production deploys.
@@ -70,7 +69,6 @@ kubectl apply -f k3s/isolation-forest/configmap.yaml
 kubectl apply -f k3s/scoring-pipeline/configmap.yaml
 kubectl apply -f k3s/api/configmap.yaml
 kubectl apply -f k3s/ingestion-pipeline/deployment.yaml
-kubectl apply -f k3s/isolation-forest/cronjob.yaml
 kubectl apply -f k3s/isolation-forest/deployment.yaml
 kubectl apply -f k3s/scoring-pipeline/deployment.yaml
 kubectl apply -f k3s/api/deployment.yaml
