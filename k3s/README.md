@@ -16,6 +16,8 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `scoring-pipeline/configmap.yaml`: non-secret hourly scoring settings, including the promotion marker path and disabled-by-default anomaly event persistence kill switch.
 - `scoring-pipeline/deployment.yaml`: standalone service that exports recent readings on startup and hourly; reuses `isolation-forest-creds` for DB credentials.
 - `scoring-pipeline/secret.example.yaml`: placeholder secret shape only.
+- `ui/deployment.yaml`: nginx-served static React dashboard.
+- `ui/service.yaml`: NodePort service on port 30080 — reach the dashboard at `http://<node-ip>:30080`.
 
 ## Required External Services
 
@@ -26,6 +28,7 @@ These manifests describe the `hadar` namespace workloads currently used by the p
   - `haka9670/ingestion-pipeline:latest`
   - `haka9670/isolation-forest:latest`
   - `haka9670/scoring-pipeline:latest`
+  - `haka9670/hadar-ui:latest`
 
 The scoring and isolation-forest manifests use `imagePullPolicy: IfNotPresent`; rebuild or preload new image tags before rollout, and prefer immutable tags over `latest` for production deploys.
 
@@ -62,6 +65,8 @@ kubectl apply -f k3s/ingestion-pipeline/deployment.yaml
 kubectl apply -f k3s/isolation-forest/cronjob.yaml
 kubectl apply -f k3s/isolation-forest/deployment.yaml
 kubectl apply -f k3s/scoring-pipeline/deployment.yaml
+kubectl apply -f k3s/ui/deployment.yaml
+kubectl apply -f k3s/ui/service.yaml
 ```
 
 ## Verify
@@ -71,5 +76,6 @@ kubectl -n hadar rollout status deployment/ingestion-pipeline
 kubectl -n hadar rollout status deployment/isolation-forest
 kubectl -n hadar rollout status deployment/scoring-pipeline
 kubectl -n hadar get cronjob isolation-forest
+kubectl -n hadar rollout status deployment/hadar-ui
 kubectl -n hadar get pods
 ```
