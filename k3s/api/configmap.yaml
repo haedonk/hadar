@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hadar-api-config
+  namespace: hadar
+data:
+  DB_DRIVER: postgresql+asyncpg
+  DB_HOST: postgres.db.svc.cluster.local
+  DB_NAME: zigbee_db
+  DB_PORT: "5432"
+  DEBUG: "false"
+  LOG_LEVEL: INFO
+  CORS_ORIGINS: http://localhost:5173

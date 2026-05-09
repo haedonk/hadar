@@ -16,6 +16,10 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `scoring-pipeline/configmap.yaml`: non-secret hourly scoring settings, including the promotion marker path and disabled-by-default anomaly event persistence kill switch.
 - `scoring-pipeline/deployment.yaml`: standalone service that exports recent readings on startup and hourly; reuses `isolation-forest-creds` for DB credentials.
 - `scoring-pipeline/secret.example.yaml`: placeholder secret shape only.
+- `api/configmap.yaml`: non-secret dashboard API settings.
+- `api/deployment.yaml`: FastAPI dashboard backend.
+- `api/service.yaml`: NodePort service for browser access to the API.
+- `api/secret.example.yaml`: placeholder API database credentials.
 
 ## Required External Services
 
@@ -26,6 +30,7 @@ These manifests describe the `hadar` namespace workloads currently used by the p
   - `haka9670/ingestion-pipeline:latest`
   - `haka9670/isolation-forest:latest`
   - `haka9670/scoring-pipeline:latest`
+  - `haka9670/hadar-api:latest`
 
 The scoring and isolation-forest manifests use `imagePullPolicy: IfNotPresent`; rebuild or preload new image tags before rollout, and prefer immutable tags over `latest` for production deploys.
 
@@ -48,6 +53,11 @@ kubectl create secret generic isolation-forest-creds \
   --from-literal=DB_PASSWORD='PASSWORD'
 
 # scoring-pipeline currently reuses isolation-forest-creds because it needs the same PostgreSQL DB_USER/DB_PASSWORD.
+
+kubectl create secret generic hadar-api-creds \
+  -n hadar \
+  --from-literal=DB_USER='USERNAME' \
+  --from-literal=DB_PASSWORD='PASSWORD'
 ```
 
 ## Apply Order
@@ -58,10 +68,13 @@ kubectl apply -f k3s/storage.yaml
 kubectl apply -f k3s/ingestion-pipeline/configmap.yaml
 kubectl apply -f k3s/isolation-forest/configmap.yaml
 kubectl apply -f k3s/scoring-pipeline/configmap.yaml
+kubectl apply -f k3s/api/configmap.yaml
 kubectl apply -f k3s/ingestion-pipeline/deployment.yaml
 kubectl apply -f k3s/isolation-forest/cronjob.yaml
 kubectl apply -f k3s/isolation-forest/deployment.yaml
 kubectl apply -f k3s/scoring-pipeline/deployment.yaml
+kubectl apply -f k3s/api/deployment.yaml
+kubectl apply -f k3s/api/service.yaml
 ```
 
 ## Verify
@@ -70,6 +83,14 @@ kubectl apply -f k3s/scoring-pipeline/deployment.yaml
 kubectl -n hadar rollout status deployment/ingestion-pipeline
 kubectl -n hadar rollout status deployment/isolation-forest
 kubectl -n hadar rollout status deployment/scoring-pipeline
+kubectl -n hadar rollout status deployment/hadar-api
 kubectl -n hadar get cronjob isolation-forest
+kubectl -n hadar get service hadar-api
 kubectl -n hadar get pods
+```
+
+The dashboard API is exposed at:
+
+```text
+http://<k3s-node-ip>:30800
 ```

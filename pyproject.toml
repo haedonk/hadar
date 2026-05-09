@@ -8,7 +8,7 @@ requires-python = ">=3.11"
 [tool.ruff]
 target-version = "py311"
 line-length = 120
-src = ["ingestion-pipeline", "isolation-forest", "scoring-pipeline", "db"]
+src = ["api", "ingestion-pipeline", "isolation-forest", "scoring-pipeline", "db"]
 
 [tool.ruff.lint]
 select = [
@@ -19,7 +19,19 @@ select = [
 ]
 
 [tool.ruff.lint.isort]
-known-first-party = ["db", "config", "pipeline", "ingest", "repos", "schemas", "services", "utils"]
+known-first-party = [
+    "config",
+    "db",
+    "dependencies",
+    "ingest",
+    "pipeline",
+    "queries",
+    "repos",
+    "routers",
+    "schemas",
+    "services",
+    "utils",
+]
 
 [tool.mypy]
 python_version = "3.11"

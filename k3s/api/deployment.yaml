@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hadar-api
+  namespace: hadar
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hadar-api
+  template:
+    metadata:
+      labels:
+        app: hadar-api
+    spec:
+      containers:
+        - name: hadar-api
+          image: haka9670/hadar-api:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: hadar-api-creds
+            - configMapRef:
+                name: hadar-api-config
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
