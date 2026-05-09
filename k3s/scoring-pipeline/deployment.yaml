@@ -30,7 +30,19 @@ spec:
               command:
                 - sh
                 - -c
-                - "test -d /proc/1 && test -w /mnt/hadar-data/output/hourly-scoring-runs && test -r /mnt/hadar-model-data/output/promoted_model.json"
+                - >-
+                  test -d /proc/1 &&
+                  test -w /mnt/hadar-data/output/hourly-scoring-runs &&
+                  (
+                    test -r "${MODEL_PROMOTION_MARKER_PATH:-/mnt/hadar-model-data/output/promoted_model.json}" ||
+                    (
+                      test -n "${MODEL_ARTIFACT_DIR:-}" &&
+                      test -d "$MODEL_ARTIFACT_DIR" &&
+                      test -r "$MODEL_ARTIFACT_DIR" &&
+                      test -n "${MODEL_RUN_ID:-}" &&
+                      test -n "${MODEL_CONFIG_NAME:-}"
+                    )
+                  )
             initialDelaySeconds: 20
             periodSeconds: 30
             failureThreshold: 3
