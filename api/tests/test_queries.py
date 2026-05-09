@@ -14,6 +14,7 @@ from queries import (
     format_reading,
     severity_from_rank,
 )
+from schemas import AnomalyEventItem, DeviceAnomalyEventItem, DeviceStatus
 
 
 def compile_statement(statement) -> str:
@@ -51,6 +52,43 @@ def test_format_device_status_uses_rank_and_defaults_count() -> None:
         "open_anomaly_count": 0,
         "last_seen": last_seen,
     }
+
+
+def test_response_models_accept_nullable_database_fields() -> None:
+    device_id = uuid4()
+    scored_at = datetime(2026, 5, 8, 2, 14, tzinfo=UTC)
+
+    DeviceStatus(
+        id=device_id,
+        label="Office plug",
+        type="plug",
+        description=None,
+        current_severity=None,
+        open_anomaly_count=0,
+        last_seen=None,
+    )
+    AnomalyEventItem(
+        id=123,
+        device_id=device_id,
+        device_label="Office plug",
+        device_type="plug",
+        scored_at=scored_at,
+        anomaly_score=-0.23,
+        event_severity="high",
+        event_status="open",
+        anomaly_reason=None,
+        model_config_name="full_c003_e100",
+        temperature_reading_id=None,
+    )
+    DeviceAnomalyEventItem(
+        id=123,
+        scored_at=scored_at,
+        anomaly_score=-0.23,
+        event_severity="high",
+        event_status="open",
+        anomaly_reason=None,
+        temperature_reading_id=None,
+    )
 
 
 def test_decimal_values_are_converted_to_json_number_types() -> None:

@@ -13,7 +13,7 @@ class DeviceStatus(BaseModel):
     id: UUID
     label: str
     type: str
-    description: str
+    description: str | None
     current_severity: Severity | None
     open_anomaly_count: int
     last_seen: datetime | None
@@ -30,7 +30,7 @@ class AnomalyEventItem(BaseModel):
     event_status: EventStatus
     anomaly_reason: str | None
     model_config_name: str
-    temperature_reading_id: int
+    temperature_reading_id: int | None
 
 
 class AnomalyEventPage(BaseModel):
@@ -54,7 +54,7 @@ class DeviceAnomalyEventItem(BaseModel):
     event_severity: Severity | None
     event_status: EventStatus
     anomaly_reason: str | None
-    temperature_reading_id: int
+    temperature_reading_id: int | None
 
 
 class TemperatureReadingItem(BaseModel):
