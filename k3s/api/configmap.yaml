@@ -10,4 +10,4 @@ data:
   DB_PORT: "5432"
   DEBUG: "false"
   LOG_LEVEL: INFO
-  CORS_ORIGINS: http://localhost:5173
+  CORS_ORIGINS: http://localhost:5173,http://10.0.0.110:30080
