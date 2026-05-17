@@ -40,6 +40,13 @@ warn_unused_configs = true
 disallow_untyped_defs = false
 check_untyped_defs = true
 
+# The shared `db/` package consumes a `config` module that each service
+# supplies at runtime inside its own container, so it is intentionally not
+# resolvable when type-checking `db/` in isolation.
+[[tool.mypy.overrides]]
+module = "config"
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_default_fixture_loop_scope = "function"
 markers = ["integration: requires a reachable test database"]
