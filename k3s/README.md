@@ -9,11 +9,9 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `ingestion-pipeline/configmap.yaml`: non-secret ingestion settings.
 - `ingestion-pipeline/deployment.yaml`: MQTT-to-PostgreSQL ingestion worker.
 - `ingestion-pipeline/secret.example.yaml`: placeholder secret shape only.
-- `isolation-forest/configmap.yaml`: non-secret isolation forest settings.
-- `isolation-forest/deployment.yaml`: long-running APScheduler service for training sweeps.
+- `isolation-forest/configmap.yaml`: non-secret isolation forest settings (consumed by the `hadar-app` isolation-forest container).
 - `isolation-forest/secret.example.yaml`: placeholder secret shape only.
-- `scoring-pipeline/configmap.yaml`: non-secret hourly scoring settings, including the promotion marker path and disabled-by-default anomaly event persistence kill switch.
-- `scoring-pipeline/deployment.yaml`: standalone service that exports recent readings on startup and hourly; reuses `isolation-forest-creds` for DB credentials.
+- `scoring-pipeline/configmap.yaml`: non-secret hourly scoring settings, including the promotion marker path and disabled-by-default anomaly event persistence kill switch (consumed by the `hadar-app` scoring-pipeline container).
 - `scoring-pipeline/secret.example.yaml`: placeholder secret shape only.
 - `api/configmap.yaml`: non-secret dashboard API settings.
 - `api/deployment.yaml`: FastAPI dashboard backend.
@@ -21,7 +19,7 @@ These manifests describe the `hadar` namespace workloads currently used by the p
 - `api/secret.example.yaml`: placeholder API database credentials.
 - `ui/deployment.yaml`: nginx-served static React dashboard.
 - `ui/service.yaml`: NodePort service on port 30080 — reach the dashboard at `http://<node-ip>:30080`.
-- `hadar-app/deployment.yaml`: combined 2-container pod (isolation-forest + scoring-pipeline). Starts at `replicas: 0`; scale up only after scaling the separate isolation-forest and scoring-pipeline Deployments to 0. Do not run both at the same time.
+- `hadar-app/deployment.yaml`: combined 2-container pod (isolation-forest + scoring-pipeline). This is the live scheduler workload; the standalone `isolation-forest` and `scoring-pipeline` Deployments have been retired and their manifests removed (their configmaps/secrets are still used here via `envFrom`).
 
 
 ## Required External Services
@@ -74,8 +72,7 @@ kubectl apply -f k3s/isolation-forest/configmap.yaml
 kubectl apply -f k3s/scoring-pipeline/configmap.yaml
 kubectl apply -f k3s/api/configmap.yaml
 kubectl apply -f k3s/ingestion-pipeline/deployment.yaml
-kubectl apply -f k3s/isolation-forest/deployment.yaml
-kubectl apply -f k3s/scoring-pipeline/deployment.yaml
+kubectl apply -f k3s/hadar-app/deployment.yaml
 kubectl apply -f k3s/api/deployment.yaml
 kubectl apply -f k3s/api/service.yaml
 kubectl apply -f k3s/ui/deployment.yaml
@@ -86,8 +83,7 @@ kubectl apply -f k3s/ui/service.yaml
 
 ```bash
 kubectl -n hadar rollout status deployment/ingestion-pipeline
-kubectl -n hadar rollout status deployment/isolation-forest
-kubectl -n hadar rollout status deployment/scoring-pipeline
+kubectl -n hadar rollout status deployment/hadar-app
 kubectl -n hadar rollout status deployment/hadar-api
 kubectl -n hadar rollout status deployment/hadar-ui
 kubectl -n hadar get pods
