@@ -37,7 +37,9 @@ def severity_from_rank(rank: int | None) -> str | None:
     return SEVERITY_BY_RANK.get(rank or 0)
 
 
-def build_device_status_statement(device_id: UUID | None = None) -> Select:
+def build_device_status_statement(
+    device_id: UUID | None = None, *, temperature_only: bool = False
+) -> Select:
     open_events = (
         select(
             AnomalyEvent.device_id.label("device_id"),
@@ -85,6 +87,9 @@ def build_device_status_statement(device_id: UUID | None = None) -> Select:
     )
     if device_id is not None:
         statement = statement.where(Device.id == device_id)
+    if temperature_only:
+        # Dashboard surfaces environmental sensors only; energy plugs are excluded.
+        statement = statement.where(Device.device_type != "plug")
     return statement
 
 
@@ -101,7 +106,7 @@ def format_device_status(row: dict[str, Any]) -> dict[str, Any]:
 
 
 async def fetch_devices(session: AsyncSession) -> list[dict[str, Any]]:
-    result = await session.execute(build_device_status_statement())
+    result = await session.execute(build_device_status_statement(temperature_only=True))
     return [format_device_status(dict(row)) for row in result.mappings().all()]
 
 

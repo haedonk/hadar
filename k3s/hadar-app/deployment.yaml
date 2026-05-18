@@ -4,7 +4,7 @@ metadata:
   name: hadar-app
   namespace: hadar
 spec:
-  replicas: 0
+  replicas: 1
   selector:
     matchLabels:
       app: hadar-app

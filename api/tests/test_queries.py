@@ -111,6 +111,14 @@ def test_device_status_statement_joins_anomalies_and_reading_sources() -> None:
     assert "greatest" in compiled.lower()
 
 
+def test_device_status_statement_can_exclude_energy_plugs() -> None:
+    without_filter = compile_statement(build_device_status_statement())
+    with_filter = compile_statement(build_device_status_statement(temperature_only=True))
+
+    assert "devices.device_type !=" not in without_filter
+    assert "devices.device_type !=" in with_filter
+
+
 def test_anomaly_events_statement_filters_and_joins_devices() -> None:
     compiled = compile_statement(
         build_anomaly_events_statement(
