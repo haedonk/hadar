@@ -1,0 +1,53 @@
+name: Build Hadar Images
+
+on:
+  push:
+    branches: [main]
+
+env:
+  REGISTRY: 10.0.0.110:30500
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build and push all hadar images
+        run: |
+          SHA=${GITHUB_SHA:0:7}
+          # Python services build from the repo root (Dockerfiles COPY db/ +
+          # <svc>/). The ui builds from its own dir (-f ui/Dockerfile ui).
+          for svc in api ingestion-pipeline isolation-forest scoring-pipeline; do
+            echo "Building hadar-${svc}:${SHA}..."
+            docker build -t $REGISTRY/hadar-${svc}:${SHA} -f ${svc}/Dockerfile .
+            echo "Pushing hadar-${svc}:${SHA}..."
+            docker push $REGISTRY/hadar-${svc}:${SHA}
+          done
+          echo "Building hadar-ui:${SHA}..."
+          docker build -t $REGISTRY/hadar-ui:${SHA} -f ui/Dockerfile ui
+          echo "Pushing hadar-ui:${SHA}..."
+          docker push $REGISTRY/hadar-ui:${SHA}
+
+      - name: Update deploy repo image tags (qa branch only)
+        env:
+          GITEA_DEPLOY_TOKEN: ${{ secrets.DEPLOY_TOKEN }}
+        run: |
+          SHA=${GITHUB_SHA:0:7}
+          echo "GITEA_DEPLOY_TOKEN length: ${#GITEA_DEPLOY_TOKEN}"
+          git config --global user.email "ci@gitea.local"
+          git config --global user.name "Gitea CI"
+          echo "http://haka9670:${GITEA_DEPLOY_TOKEN}@10.0.0.110:30300" > ~/.git-credentials
+          git config --global credential.helper store
+          rm -rf /tmp/deploy
+          git clone http://10.0.0.110:30300/haka9670/deploy.git /tmp/deploy
+          cd /tmp/deploy
+          git checkout qa
+          VERSIONS="apps/hadar/versions/kustomization.yaml"
+          for svc in api ui ingestion-pipeline isolation-forest scoring-pipeline; do
+            # Bump newTag on the line right after this image's name entry.
+            sed -i "\|name: 10.0.0.110:30500/hadar-${svc}\$|{n;s|newTag: .*|newTag: ${SHA}|;}" "$VERSIONS"
+          done
+          git add "$VERSIONS"
+          git diff --cached --quiet || git commit -m "ci: bump hadar images to ${SHA}"
+          git push http://haka9670:${GITEA_DEPLOY_TOKEN}@10.0.0.110:30300/haka9670/deploy.git qa
