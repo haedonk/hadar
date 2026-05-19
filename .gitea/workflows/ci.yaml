@@ -6,6 +6,7 @@ on:
 
 env:
   REGISTRY: 10.0.0.110:30500
+  VITE_API_URL: http://10.0.0.110:30800
 
 jobs:
   build:
@@ -24,8 +25,11 @@ jobs:
             echo "Pushing hadar-${svc}:${SHA}..."
             docker push $REGISTRY/hadar-${svc}:${SHA}
           done
-          echo "Building hadar-ui:${SHA}..."
-          docker build -t $REGISTRY/hadar-ui:${SHA} -f ui/Dockerfile ui
+          echo "Building hadar-ui:${SHA} with VITE_API_URL=${VITE_API_URL}..."
+          docker build \
+            --build-arg VITE_API_URL=${VITE_API_URL} \
+            -t $REGISTRY/hadar-ui:${SHA} \
+            -f ui/Dockerfile ui
           echo "Pushing hadar-ui:${SHA}..."
           docker push $REGISTRY/hadar-ui:${SHA}
 
