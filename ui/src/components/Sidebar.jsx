@@ -22,6 +22,22 @@ function severityConfig(severity) {
   }
 }
 
+function startsWithNumber(label) {
+  return /^[0-9]/.test((label ?? '').trim());
+}
+
+function sortDevices(a, b) {
+  const aNumeric = startsWithNumber(a.label);
+  const bNumeric = startsWithNumber(b.label);
+
+  if (aNumeric !== bNumeric) return aNumeric ? 1 : -1;
+
+  return (a.label ?? a.id).localeCompare(b.label ?? b.id, undefined, {
+    numeric: true,
+    sensitivity: 'base',
+  });
+}
+
 function SkeletonRow() {
   return (
     <div style={{ padding: 'var(--space-3) var(--space-4)', borderTop: '1px solid var(--color-border-subtle)' }}>
@@ -106,8 +122,11 @@ export default function Sidebar() {
   const { id: activeId } = useParams();
   const { data: devices, loading, error } = useFetch(() => api.devices(), []);
 
-  const totalDevices = devices?.length ?? 0;
-  const activeDevices = devices?.filter(device => device.open_anomaly_count > 0).length ?? 0;
+  const temperatureDevices = (devices ?? [])
+    .filter(device => device.type === 'temperature')
+    .sort(sortDevices);
+  const totalDevices = temperatureDevices.length;
+  const activeDevices = temperatureDevices.filter(device => device.open_anomaly_count > 0).length;
 
   return (
     <aside style={{
@@ -135,7 +154,12 @@ export default function Sidebar() {
             Could not load devices.
           </div>
         )}
-        {devices && devices.map(device => (
+        {!loading && !error && devices && temperatureDevices.length === 0 && (
+          <div style={{ padding: 'var(--space-4)', fontSize: 'var(--text-sm)', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
+            No temperature devices found.
+          </div>
+        )}
+        {temperatureDevices.map(device => (
           <DeviceRow
             key={device.id}
             device={device}
