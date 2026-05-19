@@ -1,16 +1,27 @@
-# React + Vite
+# Hadar Dashboard UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+React single-page application for the Hadar anomaly monitoring dashboard. Built with Vite and served via nginx in production.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Real-time anomaly event feed with severity indicators (critical / warning / low)
+- Device list with current anomaly status
+- Temperature device detail views
+- Light theme designed for at-a-glance home monitoring
 
-## React Compiler
+## Development
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+```bash
+npm install
+npm run dev
+```
 
-## Expanding the ESLint configuration
+The dev server starts at `http://localhost:5173` and expects the API at `http://localhost:8000` (configurable via `VITE_API_URL`).
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+## Production Build
+
+```bash
+npm run build
+```
+
+The output in `dist/` is served by the nginx container defined in `Dockerfile`.

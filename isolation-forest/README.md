@@ -47,8 +47,6 @@ This will:
 | `utils/logger.py` | Logging setup & configuration |
 | `tests/` | Test utilities |
 | `tests/test_cleaning.py` | Data cleaning validation |
-| `db/` | SQLAlchemy models & async session |
-| `db/models/` | Database model definitions |
 | `data/` | Plans, reference files |
 | `models/` | Saved .joblib model artifacts (gitignored) |
 | `logs/` | Timestamped run logs (gitignored) |

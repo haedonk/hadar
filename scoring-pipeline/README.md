@@ -1,30 +1,30 @@
 # Scoring Pipeline
 
-Separate downstream service for HADAR anomaly scoring dry runs.
+Hourly anomaly scoring service for the Hadar project. Loads promoted Isolation Forest models and scores recent temperature readings, persisting anomaly events to PostgreSQL.
 
-Initial scope:
+## What It Does
 
-- Read recent temperature readings from PostgreSQL.
-- Export hourly dry-run CSV files.
-- Run once on service startup and then on an hourly schedule.
-- Keep ingestion, training, FastAPI, and dashboard services unchanged.
+1. Reads the promoted model marker (`promoted_model.json`) from shared storage.
+2. Loads the corresponding per-device Isolation Forest models.
+3. Fetches recent temperature readings from PostgreSQL.
+4. Scores readings and upserts anomaly events (with severity and status) into the `anomaly_events` table.
+5. Runs once at startup, then repeats on an hourly schedule.
 
-Planned output path inside the container:
+## Runtime
 
-```text
-/mnt/hadar-data/output/hourly-scoring-runs/
-```
+The scoring pipeline runs as a container alongside the isolation-forest trainer in the combined `hadar-app` Kubernetes deployment. Both containers share a persistent volume at `/mnt/hadar-model-data` for model artifacts.
 
-Mounted host path:
+## Configuration
 
-```text
-/mnt/nas/hadar/scoring-pipeline/output/hourly-scoring-runs/
-```
+Environment variables (non-secret values set via ConfigMap, credentials via Secret):
 
-This service does not write `anomaly_events` yet.
-
-Model artifacts are read from:
-
-```text
-/mnt/hadar-model-data/output/training-sweeps/20260506T220024Z_comprehensive-training-sweep/configs/full_c003_e100/models
-```
+| Variable | Description |
+|---|---|
+| `DB_DRIVER` | SQLAlchemy driver (default `postgresql+asyncpg`) |
+| `DB_HOST` | PostgreSQL host |
+| `DB_PORT` | PostgreSQL port |
+| `DB_NAME` | Database name |
+| `DB_USER` | Database user (from Secret) |
+| `DB_PASSWORD` | Database password (from Secret) |
+| `PERSIST_ANOMALY_EVENTS` | Set to `true` to write anomaly events (default `false`) |
+| `PROMOTION_MARKER_PATH` | Path to `promoted_model.json` on the shared volume |
