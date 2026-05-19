@@ -192,8 +192,8 @@ export default function AnomalyFeed({ activeFilter, onFilterChange, expandedId, 
   }, [filter]);
 
   return (
-    <section style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', padding: 'var(--space-6)', gap: 'var(--space-4)' }}>
-      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap' }}>
+    <section style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, padding: 'var(--space-6)', gap: 'var(--space-4)' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 'var(--space-4)', flexWrap: 'wrap', flexShrink: 0 }}>
         <div>
           <h2 style={{ color: 'var(--color-text-primary)', fontSize: 'var(--text-xl)', fontWeight: 700, lineHeight: 1.2 }}>
             Anomaly review
@@ -209,8 +209,8 @@ export default function AnomalyFeed({ activeFilter, onFilterChange, expandedId, 
         )}
       </div>
 
-      <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-soft)' }}>
-        <div style={{ display: 'flex', gap: 'var(--space-1)', padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)', flexWrap: 'wrap' }}>
+      <div style={{ background: 'var(--color-bg-surface)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', overflow: 'hidden', boxShadow: 'var(--shadow-soft)', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        <div style={{ display: 'flex', gap: 'var(--space-1)', padding: 'var(--space-3) var(--space-4)', borderBottom: '1px solid var(--color-border-subtle)', flexWrap: 'wrap', flexShrink: 0 }}>
           {FILTERS.map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)} style={{
               padding: 'var(--space-2) var(--space-3)',
@@ -226,7 +226,7 @@ export default function AnomalyFeed({ activeFilter, onFilterChange, expandedId, 
           ))}
         </div>
 
-        <div>
+        <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
           {loading && Array.from({ length: 5 }, (_, i) => <SkeletonRow key={i} />)}
           {error && (
             <div style={{ padding: 'var(--space-12)', color: 'var(--color-critical-text)', fontSize: 'var(--text-base)', textAlign: 'center' }}>

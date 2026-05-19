@@ -33,27 +33,24 @@ export default function Dashboard() {
         overflow: 'hidden',
       }}
     >
-      {/* Sticky top status bar */}
       <StatusBar />
 
-      {/* Body: sidebar + feed */}
       <div
         style={{
           display: 'flex',
           flex: 1,
-          minHeight: 0, // allow children to shrink below their content size
+          minHeight: 0,
           overflow: 'hidden',
         }}
       >
-        {/* Sidebar — fixed width at ≥900px, hidden below */}
         {showSidebar && <Sidebar />}
 
-        {/* Main feed — fills remaining width, scrollable */}
         <main
           style={{
             flex: 1,
             minWidth: 0,
-            overflowY: 'auto',
+            minHeight: 0,
+            overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
           }}

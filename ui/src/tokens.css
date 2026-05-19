@@ -1,37 +1,37 @@
 /* Design tokens - Hadar Dashboard */
 
 :root {
-  /* Backgrounds - warm slate, not cold blue-black */
-  --color-bg-base:    oklch(11% 0.008 38);
-  --color-bg-surface: oklch(14% 0.008 38);
-  --color-bg-raised:  oklch(17% 0.009 38);
-  --color-bg-hover:   oklch(20% 0.009 38);
-  --color-bg-active:  oklch(22% 0.010 40);
+  /* Backgrounds */
+  --color-bg-base:    oklch(96% 0.010 82);
+  --color-bg-surface: oklch(99% 0.004 82);
+  --color-bg-raised:  oklch(94% 0.012 82);
+  --color-bg-hover:   oklch(91% 0.014 82);
+  --color-bg-active:  oklch(89% 0.018 82);
 
   /* Borders */
-  --color-border-subtle: oklch(22% 0.008 38);
-  --color-border:        oklch(27% 0.008 38);
+  --color-border-subtle: oklch(87% 0.012 82);
+  --color-border:        oklch(77% 0.018 82);
 
   /* Text */
-  --color-text-primary:   oklch(92% 0.006 38);
-  --color-text-secondary: oklch(66% 0.008 38);
-  --color-text-muted:     oklch(46% 0.007 38);
+  --color-text-primary:   oklch(24% 0.018 72);
+  --color-text-secondary: oklch(42% 0.016 72);
+  --color-text-muted:     oklch(58% 0.014 72);
 
-  /* Severity roles - must pass WCAG AA on bg-surface */
-  --color-critical:       oklch(62% 0.19 25);
-  --color-critical-bg:    oklch(18% 0.05 25);
-  --color-critical-text:  oklch(85% 0.10 25);
+  /* Severity roles - readable on light surfaces */
+  --color-critical:       oklch(52% 0.19 25);
+  --color-critical-bg:    oklch(94% 0.035 25);
+  --color-critical-text:  oklch(38% 0.16 25);
 
-  --color-warning:        oklch(72% 0.14 65);
-  --color-warning-bg:     oklch(18% 0.04 65);
-  --color-warning-text:   oklch(88% 0.07 65);
+  --color-warning:        oklch(62% 0.14 65);
+  --color-warning-bg:     oklch(95% 0.045 75);
+  --color-warning-text:   oklch(42% 0.11 65);
 
-  --color-nominal:        oklch(58% 0.07 195);
-  --color-nominal-bg:     oklch(16% 0.03 195);
-  --color-nominal-text:   oklch(78% 0.05 195);
+  --color-nominal:        oklch(52% 0.09 185);
+  --color-nominal-bg:     oklch(94% 0.035 185);
+  --color-nominal-text:   oklch(34% 0.07 185);
 
-  --color-accent:         oklch(72% 0.10 175);
-  --color-accent-bg:      oklch(17% 0.035 175);
+  --color-accent:         oklch(46% 0.10 190);
+  --color-accent-bg:      oklch(93% 0.034 190);
 
   /* Typography */
   --font-sans: 'Inter', system-ui, sans-serif;
@@ -65,7 +65,7 @@
   --sidebar-width: 260px;
 
   /* Elevation */
-  --shadow-soft: 0 18px 60px oklch(4% 0.004 38 / 0.34);
+  --shadow-soft: 0 16px 44px oklch(52% 0.025 72 / 0.15);
 
   /* Transitions */
   --transition-fast: 120ms ease-out;
